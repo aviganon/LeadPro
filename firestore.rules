@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========== HELPER FUNCTIONS ==========
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuth() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isActiveUser() {
+      return isAuth() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true;
+    }
+
+    function validUserWrite() {
+      let allowed = ['name', 'email', 'vertical', 'updatedAt'];
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
+    }
+
+    // ========== USERS ==========
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuth() && request.auth.uid == userId;
+      allow update: if (isOwner(userId) && validUserWrite()) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ========== LEADS ==========
+
+    match /leads/{leadId} {
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow create: if isActiveUser() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // ========== POSTS ==========
+
+    match /posts/{postId} {
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow create: if isActiveUser() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow delete: if isAuth() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+    }
+
+    // ========== TEMPLATES ==========
+
+    match /templates/{templateId} {
+      // System templates (userId='system') readable by all active users
+      allow read: if isActiveUser() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.userId == 'system'
+      );
+      allow create: if isActiveUser() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow delete: if isAuth() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+    }
+
+    // ========== FACEBOOK TOKENS ==========
+    // Only the owning user and server-side admin SDK can access tokens
+
+    match /fb_tokens/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
+      // No delete — tokens are updated, not deleted
+    }
+
+    // ========== FACEBOOK GROUPS ==========
+
+    match /fb_groups/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // ========== USER STATS ==========
+
+    match /user_stats/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      // Stats are written only by Cloud Functions (admin SDK), not client
+      allow write: if isAdmin();
+    }
+
+    // ========== SCHEDULE CONFIGS ==========
+
+    match /schedule_configs/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // ========== SYSTEM CONFIG ==========
+
+    match /system_config/{docId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // ========== AUDIT LOG ==========
+
+    match /audit_log/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuth(); // Users can create, not update/delete
+      allow update, delete: if false;
+    }
+  }
+}
