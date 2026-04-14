@@ -1,0 +1,25 @@
+# Dependencies — must not overwrite Linux `node_modules` from deps stage
+node_modules
+npm-debug.log*
+
+# Next.js build output from host (different OS / stale cache)
+.next
+out
+
+# Git & IDE
+.git
+.gitignore
+.cursor
+.vscode
+
+# Env & secrets (runtime injects real values)
+.env
+.env.*
+!.env.example
+
+# Misc
+*.md
+Dockerfile*
+.dockerignore
+coverage
+.turbo

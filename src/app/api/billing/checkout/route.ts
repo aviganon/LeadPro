@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { PLAN_PRICES } from '@/lib/billingPlans'
 import { updateUser } from '@/lib/db'
 import { db } from '@/lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
@@ -8,20 +9,6 @@ function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY
   if (!key) throw new Error('STRIPE_SECRET_KEY is not set')
   return new Stripe(key)
-}
-
-// Plan → Stripe Price ID mapping
-export const PLAN_PRICES: Record<string, string> = {
-  basic:      process.env.STRIPE_PRICE_BASIC ?? '',
-  pro:        process.env.STRIPE_PRICE_PRO ?? '',
-  enterprise: process.env.STRIPE_PRICE_ENTERPRISE ?? '',
-}
-
-export const PLAN_LIMITS = {
-  free:       { postsPerDay: 3,  leadsPerMonth: 20,  groups: 5 },
-  basic:      { postsPerDay: 10, leadsPerMonth: 100, groups: 15 },
-  pro:        { postsPerDay: 30, leadsPerMonth: 500, groups: 50 },
-  enterprise: { postsPerDay: 100, leadsPerMonth: 9999, groups: 200 },
 }
 
 // POST /api/billing/checkout

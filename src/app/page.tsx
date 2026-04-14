@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
-  Target, Zap, TrendingUp, Users, MessageSquare, BarChart3,
+  Target, Zap, Users, MessageSquare, BarChart3,
   ArrowLeft, CheckCircle, Play, Star, Sparkles, Globe,
   Building2, Car, Briefcase, ChevronDown, Menu, X
 } from 'lucide-react'

@@ -1,19 +1,23 @@
-FROM node:20-alpine AS base
+# Debian-based image (glibc): fewer native/tooling issues than Alpine/musl for Next.js + SWC + optional sharp.
+FROM node:20-bookworm-slim AS base
 
-# Install dependencies
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
-RUN npm ci --only=production
+RUN npm ci
 
-# Build
 FROM base AS builder
 WORKDIR /app
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Pass NEXT_PUBLIC_ vars at build time
 ARG NEXT_PUBLIC_FIREBASE_API_KEY
 ARG NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
 ARG NEXT_PUBLIC_FIREBASE_PROJECT_ID
@@ -32,16 +36,18 @@ ENV NEXT_PUBLIC_FIREBASE_APP_ID=$NEXT_PUBLIC_FIREBASE_APP_ID
 ENV NEXT_PUBLIC_FACEBOOK_APP_ID=$NEXT_PUBLIC_FACEBOOK_APP_ID
 ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 
-RUN npm run build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=6144"
 
-# Production runner
+RUN npm run build && test -d .next/standalone
+
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs \
+  && useradd --system --uid 1001 --gid nodejs nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

@@ -1,18 +1,20 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { subscribeToLeads, getPosts, getLeads, updateLead, updatePost } from '@/lib/db'
-import type { Lead, Post, LeadStatus, PostStatus } from '@/types'
+import { subscribeToLeads, getPosts, updateLead, updatePost } from '@/lib/db'
+import type { Lead, Post, LeadStatus, PostStatus, FacebookGroup } from '@/types'
 
 // ========== LEADS HOOK ==========
 
 export function useLeads(userId: string | null) {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!userId) { setLoading(false); return }
+    if (!userId) {
+      void Promise.resolve().then(() => setLoading(false))
+      return
+    }
 
     const unsub = subscribeToLeads(userId, (incoming) => {
       setLeads(incoming)
@@ -44,7 +46,7 @@ export function useLeads(userId: string | null) {
     }, {} as Record<string, number>),
   }
 
-  return { leads, loading, error, updateStatus, stats }
+  return { leads, loading, updateStatus, stats }
 }
 
 // ========== POSTS HOOK ==========
@@ -61,7 +63,9 @@ export function usePosts(userId: string | null) {
     setLoading(false)
   }, [userId])
 
-  useEffect(() => { fetchPosts() }, [fetchPosts])
+  useEffect(() => {
+    void Promise.resolve().then(() => fetchPosts())
+  }, [fetchPosts])
 
   const cancelPost = useCallback(async (postId: string) => {
     await updatePost(postId, { status: 'paused' })
@@ -106,8 +110,22 @@ export function useScraper(userId: string | null, vertical: string) {
 
 // ========== FACEBOOK GROUPS HOOK ==========
 
+function normalizeFacebookGroups(raw: unknown): FacebookGroup[] {
+  const arr = Array.isArray(raw) ? raw : []
+  return arr.map((g) => {
+    const o = g as Partial<FacebookGroup> & { id: string; name: string }
+    return {
+      id: o.id,
+      name: o.name,
+      memberCount: o.memberCount,
+      privacy: o.privacy ?? 'CLOSED',
+      isSelected: o.isSelected ?? false,
+    }
+  })
+}
+
 export function useFacebookGroups(userId: string | null) {
-  const [groups, setGroups] = useState<{ id: string; name: string; memberCount?: number; isSelected: boolean }[]>([])
+  const [groups, setGroups] = useState<FacebookGroup[]>([])
   const [syncing, setSyncing] = useState(false)
 
   const syncGroups = useCallback(async () => {
@@ -116,7 +134,7 @@ export function useFacebookGroups(userId: string | null) {
     try {
       const res = await fetch(`/api/facebook/groups?userId=${userId}`)
       const data = await res.json()
-      setGroups(data.groups ?? [])
+      setGroups(normalizeFacebookGroups(data.groups))
     } finally {
       setSyncing(false)
     }

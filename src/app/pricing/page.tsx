@@ -225,12 +225,12 @@ function PricingCard({ plan, isAnnual }: { plan: Plan; isAnnual: boolean }) {
             <span className="text-4xl font-bold">
               {price === 0 ? 'חינם' : `${price}`}
             </span>
-            {price > 0 && <span className="text-lg text-muted-foreground">ש"ח</span>}
+            {price > 0 && <span className="text-lg text-muted-foreground">ש״ח</span>}
             {plan.period && <span className="text-muted-foreground">{plan.period}</span>}
           </div>
           {annualSavings > 0 && (
             <p className="text-sm text-success mt-1">
-              חיסכון של {annualSavings} ש"ח בשנה
+              חיסכון של {annualSavings} ש״ח בשנה
             </p>
           )}
         </div>
