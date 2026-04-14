@@ -22,6 +22,7 @@ interface AdminUserRow {
   email: string
   plan: 'free' | 'basic' | 'pro' | 'enterprise'
   vertical: 'real_estate' | 'car' | 'general'
+  role?: 'admin' | 'user'
   isActive: boolean
   facebookConnected: boolean
   leadsCount: number
@@ -175,6 +176,7 @@ function UsersTab({
                 <th className="text-right p-4 font-medium text-muted-foreground">משתמש</th>
                 <th className="text-right p-4 font-medium text-muted-foreground">תוכנית</th>
                 <th className="text-right p-4 font-medium text-muted-foreground">תחום</th>
+                <th className="text-right p-4 font-medium text-muted-foreground">תפקיד</th>
                 <th className="text-right p-4 font-medium text-muted-foreground">לידים</th>
                 <th className="text-right p-4 font-medium text-muted-foreground">פרסומים</th>
                 <th className="text-right p-4 font-medium text-muted-foreground">פייסבוק</th>
@@ -214,6 +216,15 @@ function UsersTab({
                         <verticalConfig.icon className="w-4 h-4" />
                         {verticalConfig.label}
                       </div>
+                    </td>
+                    <td className="p-4">
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          user.role === 'admin' ? 'bg-warning/15 text-warning' : 'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {user.role === 'admin' ? 'מנהל' : 'משתמש'}
+                      </span>
                     </td>
                     <td className="p-4 font-medium">{user.leadsCount}</td>
                     <td className="p-4 font-medium">{user.postsCount}</td>

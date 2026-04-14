@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { AdminSettingsPanel } from '@/components/AdminSettingsPanel'
 
 function FBIcon({ size = 16, className }: { size?: number; className?: string }) {
   return (
@@ -588,6 +589,14 @@ export default function DashboardPage() {
                       <label className="text-sm font-medium">אימייל</label>
                       <Input readOnly value={user.email ?? ''} className="bg-muted/50" />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">תפקיד</label>
+                      <Input
+                        readOnly
+                        value={user.role === 'admin' ? 'מנהל' : 'משתמש'}
+                        className="bg-muted/50"
+                      />
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     לשינוי פרטים יש להוסיף זרימת עריכה (עדיין לא מחוברת).
@@ -611,6 +620,7 @@ export default function DashboardPage() {
                   </Button>
                 </CardContent>
               </Card>
+              {user.role === 'admin' && <AdminSettingsPanel />}
             </div>
           )}
         </main>

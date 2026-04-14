@@ -33,6 +33,7 @@ export async function GET() {
           email: typeof d.email === 'string' ? d.email : '',
           plan: d.plan ?? 'free',
           vertical: d.vertical ?? 'general',
+          role: d.role === 'admin' ? 'admin' : 'user',
           isActive: d.isActive !== false,
           facebookConnected: !!d.facebookConnected,
           leadsCount: leadsAgg.data().count,
