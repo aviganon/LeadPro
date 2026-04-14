@@ -1,36 +1,403 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import {
-  Users, TrendingUp, Megaphone, ShieldCheck,
-  Search, MoreVertical, CheckCircle, XCircle,
-  Activity, Database, RefreshCw, AlertTriangle
+import { 
+  Target, Users, TrendingUp, ShieldCheck, Activity,
+  Search, CheckCircle, XCircle, AlertTriangle,
+  MoreHorizontal, ArrowLeft, Building2, Car, Briefcase,
+  Zap, Globe, Megaphone, BarChart3
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 
 type AdminTab = 'users' | 'stats' | 'system' | 'logs'
 
-const MOCK_USERS = [
-  { id: 'u1', name: 'דוד לוי', email: 'david@example.com', plan: 'pro', vertical: 'real_estate', isActive: true, facebookConnected: true, leadsCount: 47, postsCount: 134 },
-  { id: 'u2', name: 'שרה כהן', email: 'sara@example.com', plan: 'basic', vertical: 'car', isActive: true, facebookConnected: true, leadsCount: 23, postsCount: 58 },
-  { id: 'u3', name: 'יוסי מזרחי', email: 'yossi@example.com', plan: 'free', vertical: 'real_estate', isActive: false, facebookConnected: false, leadsCount: 4, postsCount: 6 },
-  { id: 'u4', name: 'מיכל ברק', email: 'michal@example.com', plan: 'enterprise', vertical: 'general', isActive: true, facebookConnected: true, leadsCount: 112, postsCount: 340 },
+interface AdminUserRow {
+  id: string
+  name: string
+  email: string
+  plan: 'free' | 'basic' | 'pro' | 'enterprise'
+  vertical: 'real_estate' | 'car' | 'general'
+  isActive: boolean
+  facebookConnected: boolean
+  leadsCount: number
+  postsCount: number
+  createdAt: string | null
+}
+
+interface AdminAggregate {
+  totalLeads: number
+  totalPosts: number
+  leadsToday: number
+  postsToday: number
+  conversionRate: number
+}
+
+const PLAN_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  free: { label: 'Free', color: 'text-muted-foreground', bg: 'bg-muted' },
+  basic: { label: 'Basic', color: 'text-primary', bg: 'bg-primary/10' },
+  pro: { label: 'Pro', color: 'text-success', bg: 'bg-success/10' },
+  enterprise: { label: 'Enterprise', color: 'text-accent', bg: 'bg-accent/10' },
+}
+
+const VERTICAL_CONFIG: Record<string, { label: string; icon: React.ElementType }> = {
+  real_estate: { label: 'נדל"ן', icon: Building2 },
+  car: { label: 'רכב', icon: Car },
+  general: { label: 'עסקים', icon: Briefcase },
+}
+
+const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
+  { id: 'users', label: 'משתמשים', icon: Users },
+  { id: 'stats', label: 'סטטיסטיקות', icon: TrendingUp },
+  { id: 'system', label: 'מערכת', icon: ShieldCheck },
+  { id: 'logs', label: 'לוגים', icon: Activity },
 ]
 
-const PLAN_COLORS: Record<string, string> = {
-  free: '#888780',
-  basic: '#378ADD',
-  pro: '#1D9E75',
-  enterprise: '#7F77DD',
+function AdminHeader({ activeTab, setActiveTab }: { activeTab: AdminTab; setActiveTab: (tab: AdminTab) => void }) {
+  return (
+    <div className="bg-sidebar text-sidebar-foreground border-b border-sidebar-border">
+      <div className="container mx-auto px-6">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-lg gradient-hero flex items-center justify-center">
+                <Target className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-bold text-lg">LeadPro</span>
+              <span className="px-2 py-0.5 rounded bg-warning/20 text-warning text-xs font-medium">Admin</span>
+            </Link>
+
+            <nav className="hidden md:flex items-center gap-1">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                    activeTab === tab.id 
+                      ? 'bg-sidebar-accent text-sidebar-foreground font-medium' 
+                      : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <Button variant="ghost" size="sm" className="text-sidebar-foreground/70" asChild>
+            <Link href="/dashboard">
+              <ArrowLeft className="w-4 h-4 ml-2" />
+              חזרה לדשבורד
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function UsersTab({
+  users,
+  onToggleActive,
+}: {
+  users: AdminUserRow[]
+  onToggleActive: (id: string) => Promise<void>
+}) {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [pending, setPending] = useState<string | null>(null)
+
+  const stats = {
+    total: users.length,
+    active: users.filter(u => u.isActive).length,
+    connected: users.filter(u => u.facebookConnected).length,
+    proPlan: users.filter(u => ['pro', 'enterprise'].includes(u.plan)).length,
+  }
+
+  const filteredUsers = users.filter(u => 
+    u.name.includes(searchTerm) || u.email.includes(searchTerm)
+  )
+
+  async function handleToggle(id: string) {
+    setPending(id)
+    try {
+      await onToggleActive(id)
+    } finally {
+      setPending(null)
+    }
+  }
+
+  return (
+    <div className="space-y-6 animate-slide-up">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[
+          { label: 'סה"כ משתמשים', value: stats.total, icon: Users, color: 'bg-primary/10 text-primary' },
+          { label: 'פעילים', value: stats.active, icon: CheckCircle, color: 'bg-success/10 text-success' },
+          { label: 'חוברו לפייסבוק', value: stats.connected, icon: Globe, color: 'bg-accent/10 text-accent' },
+          { label: 'Pro+', value: stats.proPlan, icon: Zap, color: 'bg-warning/10 text-warning' },
+        ].map((stat) => (
+          <Card key={stat.label} className="border-0 shadow-md hover-lift">
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl ${stat.color} flex items-center justify-center`}>
+                <stat.icon className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="חפש משתמש..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pr-10"
+        />
+      </div>
+
+      {/* Users table */}
+      <Card className="border-0 shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-muted/50 border-b">
+              <tr>
+                <th className="text-right p-4 font-medium text-muted-foreground">משתמש</th>
+                <th className="text-right p-4 font-medium text-muted-foreground">תוכנית</th>
+                <th className="text-right p-4 font-medium text-muted-foreground">תחום</th>
+                <th className="text-right p-4 font-medium text-muted-foreground">לידים</th>
+                <th className="text-right p-4 font-medium text-muted-foreground">פרסומים</th>
+                <th className="text-right p-4 font-medium text-muted-foreground">פייסבוק</th>
+                <th className="text-right p-4 font-medium text-muted-foreground">סטטוס</th>
+                <th className="p-4"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((user, index) => {
+                const planConfig = PLAN_CONFIG[user.plan] ?? PLAN_CONFIG.free
+                const verticalConfig =
+                  VERTICAL_CONFIG[user.vertical] ?? VERTICAL_CONFIG.general
+                return (
+                  <tr 
+                    key={user.id} 
+                    className={`border-b hover:bg-muted/30 transition-colors ${!user.isActive ? 'opacity-50' : ''}`}
+                    style={{ animationDelay: `${index * 0.03}s` }}
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full gradient-hero flex items-center justify-center text-white font-bold">
+                          {user.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{user.name}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${planConfig.bg} ${planConfig.color}`}>
+                        {planConfig.label}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <verticalConfig.icon className="w-4 h-4" />
+                        {verticalConfig.label}
+                      </div>
+                    </td>
+                    <td className="p-4 font-medium">{user.leadsCount}</td>
+                    <td className="p-4 font-medium">{user.postsCount}</td>
+                    <td className="p-4">
+                      {user.facebookConnected 
+                        ? <CheckCircle className="w-5 h-5 text-success" />
+                        : <XCircle className="w-5 h-5 text-muted-foreground" />
+                      }
+                    </td>
+                    <td className="p-4">
+                      <button
+                        type="button"
+                        onClick={() => handleToggle(user.id)}
+                        disabled={pending === user.id}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                          user.isActive 
+                            ? 'bg-success/10 text-success hover:bg-success/20' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                        }`}
+                      >
+                        {pending === user.id ? '...' : user.isActive ? 'פעיל' : 'מושבת'}
+                      </button>
+                    </td>
+                    <td className="p-4">
+                      <button className="p-2 rounded-lg hover:bg-muted">
+                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+function StatsTab({ users, aggregate }: { users: AdminUserRow[]; aggregate: AdminAggregate }) {
+  const stats = [
+    { label: 'סה״כ לידים (Firestore)', value: aggregate.totalLeads.toLocaleString('he-IL'), icon: Users },
+    { label: 'סה״כ פרסומים', value: aggregate.totalPosts.toLocaleString('he-IL'), icon: Megaphone },
+    {
+      label: 'שיעור המרה (לידים מומרים)',
+      value: `${aggregate.conversionRate}%`,
+      icon: TrendingUp,
+    },
+    { label: 'לידים היום', value: aggregate.leadsToday.toLocaleString('he-IL'), icon: Zap },
+    { label: 'פרסומים היום', value: aggregate.postsToday.toLocaleString('he-IL'), icon: BarChart3 },
+  ]
+
+  const topUsers = [...users]
+    .sort((a, b) => b.leadsCount - a.leadsCount)
+    .slice(0, 5)
+
+  return (
+    <div className="space-y-6 animate-slide-up">
+      {/* Stats grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {stats.map((stat, index) => (
+          <Card key={stat.label} className="border-0 shadow-md hover-lift" style={{ animationDelay: `${index * 0.05}s` }}>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <stat.icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold">{stat.value}</p>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Top users */}
+      <Card className="border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle>משתמשים מובילים</CardTitle>
+          <CardDescription>לפי כמות לידים</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {topUsers.map((user, index) => (
+              <div key={user.id} className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                  index === 0 ? 'bg-warning/20 text-warning' :
+                  index === 1 ? 'bg-muted text-muted-foreground' :
+                  index === 2 ? 'bg-accent/20 text-accent' :
+                  'bg-muted text-muted-foreground'
+                }`}>
+                  {index + 1}
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">{user.name}</p>
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                </div>
+                <div className="text-left">
+                  <p className="font-bold">{user.leadsCount}</p>
+                  <p className="text-xs text-muted-foreground">לידים</p>
+                </div>
+                <div className="text-left">
+                  <p className="font-bold">{user.postsCount}</p>
+                  <p className="text-xs text-muted-foreground">פרסומים</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function SystemTab() {
+  return (
+    <div className="max-w-2xl animate-slide-up space-y-6">
+      <Card className="border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle>תשתית וניטור</CardTitle>
+          <CardDescription>
+            אין כאן סטטוס &quot;חי&quot; מזויף. ניטור Firebase, Cloud Run, Stripe ו-Meta מתבצה ב-Google Cloud Console,
+            ב-Firebase ובלוח הבקרה של כל שירות.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground space-y-3">
+          <p>
+            להגדרות פרויקט, אינדקסים ו-Secrets: Firebase Console ו-GCP. הדשבורד כאן מציג רק נתונים שנשלפים מ-Firestore
+            (משתמשים, ספירות לידים/פרסומים).
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function LogsTab() {
+  return (
+    <div className="max-w-2xl animate-slide-up">
+      <Card className="border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle>לוגים מרכזיים</CardTitle>
+          <CardDescription>
+            לא מוצגים כאן רשומות דמה. לוגי שרת ו-Functions נמצאים ב-Google Cloud Logging; אירועי אבטחה — ב-Firebase.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground text-sm gap-2">
+          <AlertTriangle className="w-10 h-10 opacity-40" />
+          <p>אין feed לוגים מוטמע באפליקציה. בעתיד אפשר לחבר Audit באמצעות Firestore או ייצוא מ-Cloud Logging.</p>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
 
 export default function AdminPage() {
-  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [tab, setTab] = useState<AdminTab>('users')
-  const [search, setSearch] = useState('')
-  const [users, setUsers] = useState(MOCK_USERS)
+  const { user, loading: authLoading } = useAuth()
+  const [activeTab, setActiveTab] = useState<AdminTab>('users')
+  const [adminUsers, setAdminUsers] = useState<AdminUserRow[]>([])
+  const [aggregate, setAggregate] = useState<AdminAggregate | null>(null)
+  const [overviewLoading, setOverviewLoading] = useState(true)
+  const [overviewError, setOverviewError] = useState<string | null>(null)
+
+  async function loadOverview() {
+    setOverviewLoading(true)
+    setOverviewError(null)
+    try {
+      const res = await fetch('/api/admin/overview')
+      if (!res.ok) {
+        setOverviewError('לא ניתן לטעון נתונים')
+        return
+      }
+      const data = await res.json()
+      setAdminUsers(data.users ?? [])
+      setAggregate(data.aggregate ?? null)
+    } catch {
+      setOverviewError('שגיאת רשת')
+    } finally {
+      setOverviewLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (authLoading) return
@@ -43,394 +410,65 @@ export default function AdminPage() {
     }
   }, [authLoading, user, router])
 
-  const filtered = users.filter(u =>
-    u.name.includes(search) || u.email.includes(search)
-  )
+  useEffect(() => {
+    if (authLoading || !user || user.role !== 'admin') return
+    void loadOverview()
+  }, [authLoading, user])
 
-  function toggleActive(id: string) {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, isActive: !u.isActive } : u))
+  const toggleUserActive = async (id: string) => {
+    const row = adminUsers.find((u) => u.id === id)
+    if (!row) return
+    const next = !row.isActive
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isActive: next }),
+    })
+    if (res.ok) {
+      setAdminUsers((prev) => prev.map((u) => (u.id === id ? { ...u, isActive: next } : u)))
+    }
   }
-
-  const TABS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'users',  label: 'משתמשים', icon: <Users size={16} /> },
-    { id: 'stats',  label: 'סטטיסטיקות', icon: <TrendingUp size={16} /> },
-    { id: 'system', label: 'מערכת', icon: <ShieldCheck size={16} /> },
-    { id: 'logs',   label: 'לוגים', icon: <Activity size={16} /> },
-  ]
 
   if (authLoading || !user || user.role !== 'admin') {
     return (
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        minHeight: '100vh', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)',
-      }}>
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
         טוען...
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-background-tertiary)', direction: 'rtl', fontFamily: 'var(--font-sans)' }}>
+    <div className="min-h-screen bg-muted/30">
+      <AdminHeader activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Top bar */}
-      <div style={{
-        background: 'var(--color-background-primary)',
-        borderBottom: '0.5px solid var(--color-border-tertiary)',
-        padding: '0 28px',
-        display: 'flex',
-        alignItems: 'center',
-        height: 56,
-        gap: 32,
-      }}>
-        <span style={{ fontSize: 16, fontWeight: 600 }}>🎯 LeadPro Admin</span>
-
-        <div style={{ display: 'flex', gap: 4 }}>
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 7,
-                padding: '6px 14px', borderRadius: 7,
-                border: 'none',
-                background: tab === t.id ? 'var(--color-background-secondary)' : 'transparent',
-                color: tab === t.id ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                fontSize: 13, cursor: 'pointer', fontWeight: tab === t.id ? 500 : 400,
-              }}
-            >
-              {t.icon} {t.label}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ marginRight: 'auto', fontSize: 12, color: 'var(--color-text-tertiary)' }}>
-          Admin Panel
-        </div>
-      </div>
-
-      <div style={{ padding: 28 }}>
-
-        {/* ===== USERS TAB ===== */}
-        {tab === 'users' && (
-          <div>
-            {/* Summary cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
-              {[
-                { label: 'סה"כ משתמשים', value: users.length, icon: <Users size={18} /> },
-                { label: 'פעילים', value: users.filter(u => u.isActive).length, icon: <CheckCircle size={18} /> },
-                { label: 'חוברו לפייסבוק', value: users.filter(u => u.facebookConnected).length, icon: <Megaphone size={18} /> },
-                { label: 'תוכניות Pro+', value: users.filter(u => ['pro','enterprise'].includes(u.plan)).length, icon: <TrendingUp size={18} /> },
-              ].map(card => (
-                <div key={card.label} style={{
-                  background: 'var(--color-background-primary)',
-                  border: '0.5px solid var(--color-border-tertiary)',
-                  borderRadius: 12, padding: '16px 20px',
-                  display: 'flex', alignItems: 'center', gap: 14,
-                }}>
-                  <div style={{ color: 'var(--color-text-secondary)' }}>{card.icon}</div>
-                  <div>
-                    <div style={{ fontSize: 24, fontWeight: 500 }}>{card.value}</div>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{card.label}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Search */}
-            <div style={{ position: 'relative', marginBottom: 16, maxWidth: 320 }}>
-              <Search size={15} style={{
-                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                color: 'var(--color-text-tertiary)',
-              }} />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="חפש משתמש..."
-                style={{
-                  width: '100%', padding: '9px 36px 9px 12px',
-                  borderRadius: 8, border: '0.5px solid var(--color-border-secondary)',
-                  fontSize: 13, background: 'var(--color-background-primary)',
-                  color: 'var(--color-text-primary)', direction: 'rtl',
-                }}
-              />
-            </div>
-
-            {/* Users table */}
-            <div style={{
-              background: 'var(--color-background-primary)',
-              border: '0.5px solid var(--color-border-tertiary)',
-              borderRadius: 12, overflow: 'hidden',
-            }}>
-              {/* Header */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '2fr 1.5fr 100px 100px 80px 80px 80px 60px',
-                padding: '10px 18px',
-                background: 'var(--color-background-secondary)',
-                fontSize: 12, color: 'var(--color-text-tertiary)', fontWeight: 500,
-                gap: 12,
-              }}>
-                <span>משתמש</span>
-                <span>אימייל</span>
-                <span>תוכנית</span>
-                <span>תחום</span>
-                <span>לידים</span>
-                <span>פרסומים</span>
-                <span>פייסבוק</span>
-                <span>פעיל</span>
-              </div>
-
-              {filtered.map((user, i) => (
-                <div
-                  key={user.id}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '2fr 1.5fr 100px 100px 80px 80px 80px 60px',
-                    padding: '13px 18px',
-                    borderTop: i > 0 ? '0.5px solid var(--color-border-tertiary)' : 'none',
-                    alignItems: 'center',
-                    gap: 12,
-                    fontSize: 13,
-                    opacity: user.isActive ? 1 : 0.5,
-                  }}
-                >
-                  <span style={{ fontWeight: 500 }}>{user.name}</span>
-                  <span style={{ color: 'var(--color-text-secondary)', fontSize: 12 }}>{user.email}</span>
-                  <span>
-                    <span style={{
-                      padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500,
-                      background: PLAN_COLORS[user.plan] + '22',
-                      color: PLAN_COLORS[user.plan],
-                    }}>
-                      {user.plan}
-                    </span>
-                  </span>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>
-                    {user.vertical === 'real_estate' ? 'נדל"ן' : user.vertical === 'car' ? 'רכב' : 'כללי'}
-                  </span>
-                  <span style={{ fontWeight: 500 }}>{user.leadsCount}</span>
-                  <span style={{ fontWeight: 500 }}>{user.postsCount}</span>
-                  <span>
-                    {user.facebookConnected
-                      ? <CheckCircle size={16} style={{ color: 'var(--color-text-success)' }} />
-                      : <XCircle size={16} style={{ color: 'var(--color-text-tertiary)' }} />
-                    }
-                  </span>
-                  <span>
-                    <button
-                      onClick={() => toggleActive(user.id)}
-                      style={{
-                        background: user.isActive ? 'var(--color-background-success)' : 'var(--color-background-secondary)',
-                        border: 'none', borderRadius: 20,
-                        padding: '4px 10px', fontSize: 11, cursor: 'pointer',
-                        color: user.isActive ? 'var(--color-text-success)' : 'var(--color-text-secondary)',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {user.isActive ? 'פעיל' : 'כבוי'}
-                    </button>
-                  </span>
-                </div>
-              ))}
-            </div>
+      <main className="container mx-auto px-6 py-8">
+        {overviewError && (
+          <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {overviewError}
+            <Button type="button" variant="link" className="mr-2 p-0 h-auto" onClick={() => void loadOverview()}>
+              נסה שוב
+            </Button>
           </div>
         )}
 
-        {/* ===== STATS TAB ===== */}
-        {tab === 'stats' && (
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
-              {[
-                { label: 'סה"כ לידים במערכת', value: '186' },
-                { label: 'סה"כ פרסומים', value: '538' },
-                { label: 'שיעור המרה ממוצע', value: '18.3%' },
-                { label: 'פרסומים היום', value: '24' },
-                { label: 'לידים היום', value: '11' },
-                { label: 'קבוצות פעילות', value: '73' },
-              ].map(s => (
-                <div key={s.label} style={{
-                  background: 'var(--color-background-primary)',
-                  border: '0.5px solid var(--color-border-tertiary)',
-                  borderRadius: 12, padding: '18px 22px',
-                }}>
-                  <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 6 }}>{s.label}</div>
-                  <div style={{ fontSize: 30, fontWeight: 500 }}>{s.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Top users table */}
-            <div style={{
-              background: 'var(--color-background-primary)',
-              border: '0.5px solid var(--color-border-tertiary)',
-              borderRadius: 12, padding: 20,
-            }}>
-              <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 16 }}>משתמשים מובילים</div>
-              {MOCK_USERS.sort((a,b) => b.leadsCount - a.leadsCount).map((u, i) => (
-                <div key={u.id} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 0',
-                  borderBottom: i < MOCK_USERS.length - 1 ? '0.5px solid var(--color-border-tertiary)' : 'none',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{
-                      width: 28, height: 28, borderRadius: '50%',
-                      background: 'var(--color-background-info)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 12, fontWeight: 600, color: 'var(--color-text-info)',
-                    }}>
-                      {i + 1}
-                    </div>
-                    <span style={{ fontSize: 14, fontWeight: 500 }}>{u.name}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 20, fontSize: 13, color: 'var(--color-text-secondary)' }}>
-                    <span>{u.leadsCount} לידים</span>
-                    <span>{u.postsCount} פרסומים</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        {overviewLoading ? (
+          <div className="text-center text-muted-foreground py-16">טוען נתונים מ-Firestore...</div>
+        ) : (
+          <>
+            {activeTab === 'users' && (
+              <UsersTab users={adminUsers} onToggleActive={toggleUserActive} />
+            )}
+            {activeTab === 'stats' && aggregate && (
+              <StatsTab users={adminUsers} aggregate={aggregate} />
+            )}
+            {activeTab === 'stats' && !aggregate && (
+              <p className="text-muted-foreground">אין נתוני אגרגציה</p>
+            )}
+            {activeTab === 'system' && <SystemTab />}
+            {activeTab === 'logs' && <LogsTab />}
+          </>
         )}
-
-        {/* ===== SYSTEM TAB ===== */}
-        {tab === 'system' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            {/* System status */}
-            <div style={{
-              background: 'var(--color-background-primary)',
-              border: '0.5px solid var(--color-border-tertiary)',
-              borderRadius: 12, padding: 20,
-            }}>
-              <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 16 }}>סטטוס שירותים</div>
-              {[
-                { name: 'Firebase Firestore', status: 'ok' },
-                { name: 'Facebook Graph API', status: 'ok' },
-                { name: 'Post Scheduler', status: 'ok' },
-                { name: 'Lead Scraper', status: 'ok' },
-                { name: 'Claude AI', status: 'ok' },
-                { name: 'Stripe Billing', status: 'warn' },
-              ].map(svc => (
-                <div key={svc.name} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '9px 0',
-                  borderBottom: '0.5px solid var(--color-border-tertiary)',
-                }}>
-                  <span style={{ fontSize: 13 }}>{svc.name}</span>
-                  <span style={{
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    fontSize: 12,
-                    color: svc.status === 'ok' ? 'var(--color-text-success)' : 'var(--color-text-warning)',
-                  }}>
-                    {svc.status === 'ok'
-                      ? <CheckCircle size={13} />
-                      : <AlertTriangle size={13} />
-                    }
-                    {svc.status === 'ok' ? 'תקין' : 'בדיקה'}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* System toggles */}
-            <div style={{
-              background: 'var(--color-background-primary)',
-              border: '0.5px solid var(--color-border-tertiary)',
-              borderRadius: 12, padding: 20,
-            }}>
-              <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 16 }}>הגדרות מערכת</div>
-              {[
-                { label: 'מצב תחזוקה', key: 'maintenance', value: false },
-                { label: 'Lead Scraper פעיל', key: 'scraper', value: true },
-                { label: 'פרסום אוטומטי', key: 'autopost', value: true },
-                { label: 'AI תוכן', key: 'ai', value: true },
-                { label: 'רישום משתמשים חדשים', key: 'signup', value: true },
-              ].map(setting => (
-                <div key={setting.key} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '12px 0',
-                  borderBottom: '0.5px solid var(--color-border-tertiary)',
-                }}>
-                  <span style={{ fontSize: 13 }}>{setting.label}</span>
-                  <div style={{
-                    width: 40, height: 22, borderRadius: 11,
-                    background: setting.value ? '#1D9E75' : 'var(--color-border-secondary)',
-                    cursor: 'pointer', position: 'relative',
-                    transition: 'background 0.2s',
-                  }}>
-                    <div style={{
-                      position: 'absolute',
-                      top: 3, right: setting.value ? 3 : 19,
-                      width: 16, height: 16, borderRadius: '50%',
-                      background: '#fff',
-                      transition: 'right 0.2s',
-                    }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ===== LOGS TAB ===== */}
-        {tab === 'logs' && (
-          <div style={{
-            background: 'var(--color-background-primary)',
-            border: '0.5px solid var(--color-border-tertiary)',
-            borderRadius: 12, overflow: 'hidden',
-          }}>
-            <div style={{
-              padding: '12px 18px', background: 'var(--color-background-secondary)',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            }}>
-              <span style={{ fontSize: 14, fontWeight: 500 }}>Activity Log</span>
-              <button style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: 12, color: 'var(--color-text-secondary)',
-              }}>
-                <RefreshCw size={13} /> רענן
-              </button>
-            </div>
-            {[
-              { time: '14:32:11', level: 'info', msg: 'user u2 published to 3 groups successfully', user: 'שרה כהן' },
-              { time: '14:28:44', level: 'info', msg: 'lead scraper ran for user u1 — 7 new leads', user: 'דוד לוי' },
-              { time: '14:15:02', level: 'warn', msg: 'Facebook token expiring in 3 days for user u3', user: 'יוסי מזרחי' },
-              { time: '13:55:19', level: 'info', msg: 'user u4 scheduled 5 posts for tomorrow', user: 'מיכל ברק' },
-              { time: '13:40:07', level: 'error', msg: 'publish failed: rate limit hit for group 112233', user: 'דוד לוי' },
-              { time: '13:12:55', level: 'info', msg: 'new user registered: plan=free', user: 'משתמש חדש' },
-            ].map((log, i) => (
-              <div key={i} style={{
-                display: 'flex', gap: 14, padding: '11px 18px',
-                borderTop: '0.5px solid var(--color-border-tertiary)',
-                fontSize: 12, fontFamily: 'var(--font-mono)',
-                alignItems: 'flex-start',
-              }}>
-                <span style={{ color: 'var(--color-text-tertiary)', flexShrink: 0 }}>{log.time}</span>
-                <span style={{
-                  padding: '2px 8px', borderRadius: 4, fontSize: 10, flexShrink: 0,
-                  fontWeight: 500, fontFamily: 'var(--font-sans)',
-                  background: log.level === 'error'
-                    ? 'var(--color-background-danger)'
-                    : log.level === 'warn'
-                    ? 'var(--color-background-warning)'
-                    : 'var(--color-background-success)',
-                  color: log.level === 'error'
-                    ? 'var(--color-text-danger)'
-                    : log.level === 'warn'
-                    ? 'var(--color-text-warning)'
-                    : 'var(--color-text-success)',
-                }}>
-                  {log.level}
-                </span>
-                <span style={{ color: 'var(--color-text-primary)', flex: 1 }}>{log.msg}</span>
-                <span style={{ color: 'var(--color-text-tertiary)', flexShrink: 0, fontFamily: 'var(--font-sans)' }}>{log.user}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-      </div>
+      </main>
     </div>
   )
 }

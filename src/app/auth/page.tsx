@@ -1,56 +1,84 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import type { FormEvent } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
-import { Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { 
+  Target, Eye, EyeOff, ArrowLeft, Mail, Lock, User, Building2, 
+  Car, Briefcase, CheckCircle, Sparkles, Zap, TrendingUp
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+type AuthMode = 'login' | 'signup' | 'reset'
 
 const VERTICALS = [
-  { value: 'real_estate', label: '🏠 נדל"ן' },
-  { value: 'car',         label: '🚗 רכב' },
-  { value: 'general',     label: '💼 כללי' },
+  { value: 'real_estate', label: 'נדל"ן', icon: Building2, color: 'bg-primary/10 text-primary border-primary/20' },
+  { value: 'car', label: 'רכב', icon: Car, color: 'bg-accent/10 text-accent border-accent/20' },
+  { value: 'general', label: 'עסקים', icon: Briefcase, color: 'bg-success/10 text-success border-success/20' },
 ]
 
-type Mode = 'login' | 'signup' | 'reset'
+function FloatingCard({ className, delay = 0, children }: { className?: string; delay?: number; children: React.ReactNode }) {
+  return (
+    <div 
+      className={`absolute animate-float ${className}`}
+      style={{ animationDelay: `${delay}s` }}
+    >
+      {children}
+    </div>
+  )
+}
 
-export default function AuthPage() {
-  const { signIn, signUp, resetPassword } = useAuth()
+function friendlyError(code: string): string {
+  const map: Record<string, string> = {
+    'auth/invalid-credential': 'אימייל או סיסמה שגויים',
+    'auth/user-not-found': 'משתמש לא נמצא',
+    'auth/wrong-password': 'סיסמה שגויה',
+    'auth/email-already-in-use': 'אימייל כבר רשום',
+    'auth/weak-password': 'סיסמה חלשה — לפחות 6 תווים',
+    'auth/invalid-email': 'אימייל לא תקין',
+    'auth/too-many-requests': 'יותר מדי ניסיונות — נסה שוב מאוחר יותר',
+  }
+  return map[code] ?? 'שגיאה — נסה שוב'
+}
+
+function AuthPageContent() {
+  const searchParams = useSearchParams()
   const router = useRouter()
+  const { signIn, signUp, resetPassword } = useAuth()
+  const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login'
 
-  const [mode, setMode] = useState<Mode>('login')
+  const [mode, setMode] = useState<AuthMode>(initialMode)
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [vertical, setVertical] = useState('real_estate')
-  const [showPass, setShowPass] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [resetSent, setResetSent] = useState(false)
 
-  function friendlyError(code: string): string {
-    const map: Record<string, string> = {
-      'auth/invalid-credential':     'אימייל או סיסמה שגויים',
-      'auth/user-not-found':         'משתמש לא נמצא',
-      'auth/wrong-password':         'סיסמה שגויה',
-      'auth/email-already-in-use':   'אימייל כבר רשום',
-      'auth/weak-password':          'סיסמה חלשה — לפחות 6 תווים',
-      'auth/invalid-email':          'אימייל לא תקין',
-      'auth/too-many-requests':      'יותר מדי ניסיונות — נסה שוב מאוחר יותר',
-    }
-    return map[code] ?? 'שגיאה — נסה שוב'
-  }
+  useEffect(() => {
+    setError('')
+    setResetSent(false)
+  }, [mode])
 
-  async function handleSubmit(e: FormEvent) {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
+      const redirectTo = searchParams.get('redirect') || '/dashboard'
       if (mode === 'login') {
         await signIn(email, password)
-        router.push('/dashboard')
+        router.push(redirectTo)
       } else if (mode === 'signup') {
         await signUp(email, password, name, vertical)
-        router.push('/dashboard')
+        router.push(redirectTo)
       } else {
         await resetPassword(email)
         setResetSent(true)
@@ -63,229 +91,342 @@ export default function AuthPage() {
     }
   }
 
-  return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'var(--color-background-tertiary)',
-      direction: 'rtl',
-      fontFamily: 'var(--font-sans)',
-      padding: 16,
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: 400,
-        background: 'var(--color-background-primary)',
-        border: '0.5px solid var(--color-border-tertiary)',
-        borderRadius: 16,
-        padding: '32px 28px',
-      }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontSize: 32, marginBottom: 6 }}>🎯</div>
-          <div style={{ fontSize: 20, fontWeight: 600 }}>LeadPro</div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 3 }}>
-            פלטפורמת לידים ופרסום
-          </div>
-        </div>
+  const features = [
+    { icon: Target, text: 'איסוף לידים אוטומטי' },
+    { icon: Sparkles, text: 'יצירת תוכן עם AI' },
+    { icon: Zap, text: 'פרסום בקליק אחד' },
+    { icon: TrendingUp, text: 'אנליטיקס בזמן אמת' },
+  ]
 
-        {/* Mode tabs */}
-        {mode !== 'reset' && (
-          <div style={{
-            display: 'flex',
-            background: 'var(--color-background-secondary)',
-            borderRadius: 10,
-            padding: 3,
-            marginBottom: 24,
-          }}>
-            {(['login', 'signup'] as Mode[]).map(m => (
-              <button
-                key={m}
-                onClick={() => { setMode(m); setError('') }}
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: mode === m ? 'var(--color-background-primary)' : 'transparent',
-                  color: mode === m ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  fontWeight: mode === m ? 500 : 400,
-                }}
-              >
-                {m === 'login' ? 'התחברות' : 'הרשמה'}
-              </button>
+  return (
+    <div className="min-h-screen flex">
+      {/* Left side - Decorative */}
+      <div className="hidden lg:flex lg:w-1/2 gradient-hero relative overflow-hidden">
+        {/* Floating elements */}
+        <FloatingCard className="top-20 right-20" delay={0}>
+          <Card className="w-64 shadow-2xl border-0 glass-dark text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-success" />
+                </div>
+                <span className="text-sm font-medium">ליד חדש!</span>
+              </div>
+              <p className="text-xs text-white/70">דירה 4 חדרים, רמת גן</p>
+              <div className="mt-2 text-lg font-bold">ציון: 92</div>
+            </CardContent>
+          </Card>
+        </FloatingCard>
+
+        <FloatingCard className="bottom-40 left-16" delay={1}>
+          <Card className="w-56 shadow-2xl border-0 glass-dark text-white">
+            <CardContent className="p-4">
+              <div className="text-sm text-white/70 mb-1">פרסומים היום</div>
+              <div className="text-3xl font-bold">24</div>
+              <div className="flex gap-1 mt-2">
+                {[14, 22, 18, 28, 20, 16, 24].map((h, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 bg-white/20 rounded-full"
+                    style={{ height: `${h}px` }}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </FloatingCard>
+
+        <FloatingCard className="top-1/3 left-1/4" delay={2}>
+          <Card className="w-48 shadow-2xl border-0 glass-dark text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-warning" />
+                <span className="text-sm">AI יצר פוסט חדש</span>
+              </div>
+            </CardContent>
+          </Card>
+        </FloatingCard>
+
+        {/* Background circles */}
+        <div className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-white/5 animate-float" />
+        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-white/5 animate-float-slow" />
+        <div className="absolute top-1/2 right-1/3 w-64 h-64 rounded-full bg-white/5 animate-float-delay-1" />
+        
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-center px-12 text-white">
+          <Link href="/" className="flex items-center gap-2 mb-12">
+            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+              <Target className="w-6 h-6" />
+            </div>
+            <span className="text-2xl font-bold">LeadPro</span>
+          </Link>
+          
+          <h1 className="text-4xl font-bold mb-4 leading-tight">
+            הגדל את המכירות שלך<br />
+            עם לידים חמים
+          </h1>
+          
+          <p className="text-xl text-white/80 mb-8 max-w-md">
+            אסוף לידים, צור פוסטים עם AI (כשהמפתח מוגדר), ופרסם בקבוצות פייסבוק מהחשבון שלך
+          </p>
+          
+          <div className="space-y-4">
+            {features.map((feature, i) => (
+              <div key={i} className="flex items-center gap-3 text-white/90">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                  <feature.icon className="w-4 h-4" />
+                </div>
+                <span>{feature.text}</span>
+              </div>
             ))}
           </div>
-        )}
+        </div>
+      </div>
 
-        {/* Reset confirmation */}
-        {resetSent ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '20px 0',
-            color: 'var(--color-text-success)',
-            fontSize: 15,
-          }}>
-            ✅ קישור לאיפוס סיסמה נשלח לאימייל שלך
-            <br />
-            <button
-              onClick={() => { setMode('login'); setResetSent(false) }}
-              style={{ marginTop: 16, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-info)', fontSize: 14 }}
-            >
-              חזרה להתחברות
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Right side - Form */}
+      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-md animate-scale-in">
+          {/* Mobile logo */}
+          <Link href="/" className="lg:hidden flex items-center gap-2 mb-8 justify-center">
+            <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
+              <Target className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold gradient-text">LeadPro</span>
+          </Link>
 
-            {/* Name — signup only */}
-            {mode === 'signup' && (
-              <Field label="שם מלא">
-                <input
-                  required value={name} onChange={e => setName(e.target.value)}
-                  placeholder="ישראל ישראלי"
-                  style={inputStyle}
-                />
-              </Field>
-            )}
+          <Card className="border-0 shadow-xl">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-2xl">
+                {mode === 'login' && 'ברוכים השבים!'}
+                {mode === 'signup' && 'צור חשבון חדש'}
+                {mode === 'reset' && 'איפוס סיסמה'}
+              </CardTitle>
+              <CardDescription>
+                {mode === 'login' && 'התחבר לחשבון שלך להמשך'}
+                {mode === 'signup' && 'התחל את הניסיון החינמי שלך'}
+                {mode === 'reset' && 'נשלח לך קישור לאיפוס סיסמה'}
+              </CardDescription>
+            </CardHeader>
 
-            {/* Email */}
-            <Field label="אימייל">
-              <input
-                type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                style={inputStyle}
-              />
-            </Field>
-
-            {/* Password — not for reset */}
-            {mode !== 'reset' && (
-              <Field label="סיסמה">
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type={showPass ? 'text' : 'password'}
-                    required value={password} onChange={e => setPassword(e.target.value)}
-                    placeholder={mode === 'signup' ? 'לפחות 6 תווים' : '••••••••'}
-                    style={{ ...inputStyle, paddingLeft: 36 }}
-                  />
+            <CardContent className="pt-4">
+              {/* Mode tabs */}
+              {mode !== 'reset' && (
+                <div className="flex p-1 bg-muted rounded-xl mb-6">
                   <button
-                    type="button"
-                    onClick={() => setShowPass(s => !s)}
-                    style={{
-                      position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'var(--color-text-tertiary)',
-                    }}
+                    onClick={() => setMode('login')}
+                    className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+                      mode === 'login' 
+                        ? 'bg-background shadow-sm text-foreground' 
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
                   >
-                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    התחברות
+                  </button>
+                  <button
+                    onClick={() => setMode('signup')}
+                    className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
+                      mode === 'signup' 
+                        ? 'bg-background shadow-sm text-foreground' 
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    הרשמה
                   </button>
                 </div>
-              </Field>
-            )}
+              )}
 
-            {/* Vertical — signup only */}
-            {mode === 'signup' && (
-              <Field label="תחום עיסוק">
-                <select
-                  value={vertical} onChange={e => setVertical(e.target.value)}
-                  style={{ ...inputStyle, cursor: 'pointer' }}
-                >
-                  {VERTICALS.map(v => (
-                    <option key={v.value} value={v.value}>{v.label}</option>
-                  ))}
-                </select>
-              </Field>
-            )}
+              {/* Reset success message */}
+              {resetSent ? (
+                <div className="text-center py-8 animate-scale-in">
+                  <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8 text-success" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">נשלח בהצלחה!</h3>
+                  <p className="text-muted-foreground mb-6">
+                    בדוק את תיבת הדואר שלך לקישור איפוס הסיסמה
+                  </p>
+                  <Button variant="outline" onClick={() => setMode('login')}>
+                    חזרה להתחברות
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Name field - signup only */}
+                  {mode === 'signup' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">שם מלא</label>
+                      <div className="relative">
+                        <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type="text"
+                          placeholder="ישראל ישראלי"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="pr-10"
+                          required
+                        />
+                      </div>
+                    </div>
+                  )}
 
-            {/* Error */}
-            {error && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '10px 12px', borderRadius: 8,
-                background: 'var(--color-background-danger)',
-                color: 'var(--color-text-danger)',
-                fontSize: 13,
-              }}>
-                <AlertCircle size={15} />
-                {error}
-              </div>
-            )}
+                  {/* Email field */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">אימייל</label>
+                    <div className="relative">
+                      <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pr-10"
+                        required
+                      />
+                    </div>
+                  </div>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                padding: '12px',
-                borderRadius: 10,
-                border: 'none',
-                background: loading ? 'var(--color-border-secondary)' : 'var(--color-text-primary)',
-                color: 'var(--color-background-primary)',
-                fontSize: 15,
-                fontWeight: 500,
-                cursor: loading ? 'default' : 'pointer',
-                marginTop: 4,
-              }}
-            >
-              {loading
-                ? 'אנא המתן...'
-                : mode === 'login' ? 'התחבר'
-                : mode === 'signup' ? 'צור חשבון'
-                : 'שלח קישור איפוס'
-              }
-            </button>
+                  {/* Password field - not for reset */}
+                  {mode !== 'reset' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">סיסמה</label>
+                      <div className="relative">
+                        <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder={mode === 'signup' ? 'לפחות 6 תווים' : '••••••••'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pr-10 pl-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-            {/* Forgot password */}
-            {mode === 'login' && (
-              <button
-                type="button"
-                onClick={() => { setMode('reset'); setError('') }}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--color-text-secondary)', fontSize: 13, textAlign: 'center',
-                }}
-              >
-                שכחת סיסמה?
-              </button>
-            )}
+                  {/* Vertical selection - signup only */}
+                  {mode === 'signup' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">תחום עיסוק</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {VERTICALS.map((v) => (
+                          <button
+                            key={v.value}
+                            type="button"
+                            onClick={() => setVertical(v.value)}
+                            className={`p-3 rounded-xl border-2 transition-all text-center ${
+                              vertical === v.value 
+                                ? v.color + ' border-current' 
+                                : 'border-border hover:border-muted-foreground/30'
+                            }`}
+                          >
+                            <v.icon className={`w-5 h-5 mx-auto mb-1 ${vertical === v.value ? '' : 'text-muted-foreground'}`} />
+                            <span className={`text-xs font-medium ${vertical === v.value ? '' : 'text-muted-foreground'}`}>
+                              {v.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-            {/* Trial notice for signup */}
-            {mode === 'signup' && (
-              <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', textAlign: 'center', marginTop: 4 }}>
-                14 יום ניסיון חינם — ללא כרטיס אשראי
-              </div>
-            )}
-          </form>
-        )}
+                  {/* Error message */}
+                  {error && (
+                    <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm animate-scale-in">
+                      {error}
+                    </div>
+                  )}
+
+                  {/* Submit button */}
+                  <Button 
+                    type="submit" 
+                    className="w-full btn-shimmer" 
+                    size="lg"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        טוען...
+                      </span>
+                    ) : (
+                      <>
+                        {mode === 'login' && 'התחבר'}
+                        {mode === 'signup' && 'צור חשבון'}
+                        {mode === 'reset' && 'שלח קישור'}
+                        {mode !== 'reset' && <ArrowLeft className="w-4 h-4 mr-2" />}
+                      </>
+                    )}
+                  </Button>
+
+                  {/* Forgot password link */}
+                  {mode === 'login' && (
+                    <button
+                      type="button"
+                      onClick={() => setMode('reset')}
+                      className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      שכחת סיסמה?
+                    </button>
+                  )}
+
+                  {/* Back to login from reset */}
+                  {mode === 'reset' && (
+                    <button
+                      type="button"
+                      onClick={() => setMode('login')}
+                      className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      חזרה להתחברות
+                    </button>
+                  )}
+
+                  {/* Trial notice */}
+                  {mode === 'signup' && (
+                    <p className="text-center text-xs text-muted-foreground">
+                      14 יום ניסיון חינם - ללא כרטיס אשראי
+                    </p>
+                  )}
+                </form>
+              )}
+
+            </CardContent>
+          </Card>
+
+          {/* Terms */}
+          {mode === 'signup' && (
+            <p className="text-center text-xs text-muted-foreground mt-4">
+              בהרשמה אתה מסכים ל
+              <Link href="#" className="text-primary hover:underline">תנאי השימוש</Link>
+              {' '}ו
+              <Link href="#" className="text-primary hover:underline">מדיניות הפרטיות</Link>
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+export default function AuthPage() {
   return (
-    <div>
-      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6, color: 'var(--color-text-secondary)' }}>
-        {label}
-      </div>
-      {children}
-    </div>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+          טוען...
+        </div>
+      }
+    >
+      <AuthPageContent />
+    </Suspense>
   )
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '10px 12px',
-  borderRadius: 8,
-  border: '0.5px solid var(--color-border-secondary)',
-  fontSize: 14,
-  fontFamily: 'var(--font-sans)',
-  background: 'var(--color-background-primary)',
-  color: 'var(--color-text-primary)',
-  direction: 'rtl',
-  outline: 'none',
 }
