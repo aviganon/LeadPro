@@ -2,6 +2,8 @@
 
 מסמך זה משלב הנחיות קודמות (Claude / Cursor). **אל תמחק ואל תשנה שמות של משתנים או סודות** שהוגדרו ב-GitHub או כאן — רק הוסף או הבהר כשיש אישור בעלים.
 
+**תדריך מלא (פרודקשן, TODO, routes, GCP):** [`CURSOR_FULL_BRIEFING.md`](./CURSOR_FULL_BRIEFING.md)
+
 ---
 
 ## Protected environment variables (set as GitHub Secrets)
@@ -27,6 +29,7 @@ These values are configured in GitHub Actions and must **NOT** be hardcoded in a
 ## Protected files — do NOT modify (ברירת מחדל)
 
 - `.github/workflows/deploy.yml` — CI/CD pipeline *(שינוי רק אחרי אישור בעלים, ורק לתיקון ממוקד — למשל auth)*
+- `firebase.json` — Firebase config
 - `firestore.rules` — security rules
 - `firestore.indexes.json` — database indexes
 - `Dockerfile` — Cloud Run container
