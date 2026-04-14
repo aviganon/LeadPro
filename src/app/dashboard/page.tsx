@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { AdminSettingsPanel } from '@/components/AdminSettingsPanel'
+import { AdminConsole } from '@/components/admin/AdminConsole'
 
 function FBIcon({ size = 16, className }: { size?: number; className?: string }) {
   return (
@@ -692,7 +692,12 @@ export default function DashboardPage() {
           )}
 
           {tab === 'settings' && (
-            <div className="max-w-2xl space-y-6 animate-slide-up">
+            <div
+              className={cn(
+                'space-y-6 animate-slide-up w-full',
+                user.role === 'admin' ? 'max-w-6xl' : 'max-w-2xl'
+              )}
+            >
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle>פרופיל</CardTitle>
@@ -739,7 +744,7 @@ export default function DashboardPage() {
                   </Button>
                 </CardContent>
               </Card>
-              {user.role === 'admin' && <AdminSettingsPanel />}
+              {user.role === 'admin' && <AdminConsole />}
             </div>
           )}
         </main>
