@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
@@ -11,7 +11,7 @@ import {
   Target, LayoutDashboard, Users, Megaphone, Settings, Bell, LogOut,
   Plus, RefreshCw, Calendar, X, CheckCircle, AlertTriangle, Clock,
   Sparkles, Send, ChevronDown, Search,
-  MoreHorizontal, Zap, Globe, TrendingUp,
+  MoreHorizontal, Zap, Globe, TrendingUp, Menu, ChevronRight, ChevronLeft,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -74,6 +74,10 @@ function Sidebar({
   userEmail,
   verticalLabel,
   newLeadsCount,
+  collapsed,
+  onToggleCollapsed,
+  mobileOpen,
+  onMobileOpenChange,
 }: {
   activeTab: Tab
   setActiveTab: (t: Tab) => void
@@ -84,79 +88,127 @@ function Sidebar({
   userEmail: string
   verticalLabel: string
   newLeadsCount: number
+  collapsed: boolean
+  onToggleCollapsed: () => void
+  mobileOpen: boolean
+  onMobileOpenChange: (open: boolean) => void
 }) {
   const initial = (userName || userEmail || '?')[0]
 
+  function selectTab(t: Tab) {
+    setActiveTab(t)
+    onMobileOpenChange(false)
+  }
+
   return (
-    <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col h-screen fixed right-0 top-0 z-50 border-l border-sidebar-border">
-      <div className="p-6 border-b border-sidebar-border">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
+    <aside
+      className={cn(
+        'bg-sidebar text-sidebar-foreground flex flex-col h-screen fixed right-0 top-0 z-50 border-l border-sidebar-border shadow-xl md:shadow-none transition-[width,transform] duration-200 ease-out',
+        collapsed ? 'md:w-[4.5rem] w-64' : 'w-64',
+        mobileOpen ? 'translate-x-0' : 'translate-x-full',
+        'md:translate-x-0'
+      )}
+    >
+      <div className={cn('border-b border-sidebar-border flex items-center gap-2', collapsed ? 'p-3 justify-center flex-col' : 'p-4 md:p-6')}>
+        <Link href="/" className={cn('flex items-center gap-3 min-w-0', collapsed && 'justify-center')} onClick={() => onMobileOpenChange(false)}>
+          <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center shrink-0">
             <Target className="w-5 h-5 text-white" />
           </div>
-          <div>
-            <div className="font-bold text-lg">LeadPro</div>
-            <div className="text-xs text-sidebar-foreground/60">{verticalLabel}</div>
-          </div>
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-lg truncate">LeadPro</div>
+              <div className="text-xs text-sidebar-foreground/60 truncate">{verticalLabel}</div>
+            </div>
+          )}
         </Link>
+        <button
+          type="button"
+          className="hidden md:flex shrink-0 p-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          onClick={onToggleCollapsed}
+          aria-label={collapsed ? 'הרחב תפריט' : 'צמצם תפריט'}
+        >
+          {collapsed ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+        </button>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className={cn('flex-1 overflow-y-auto space-y-1', collapsed ? 'p-2' : 'p-4')}>
         {NAV_ITEMS.map((item) => (
           <button
             key={item.id}
             type="button"
-            onClick={() => setActiveTab(item.id)}
+            title={collapsed ? item.label : undefined}
+            onClick={() => selectTab(item.id)}
             className={cn(
-              'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-right',
+              'relative w-full flex items-center gap-3 rounded-xl transition-all text-right',
+              collapsed ? 'justify-center px-2 py-3' : 'px-4 py-3',
               activeTab === item.id
                 ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
                 : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
             )}
           >
             <item.icon className="w-5 h-5 shrink-0" />
-            <span className="flex-1">{item.label}</span>
-            {item.id === 'leads' && newLeadsCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-xs bg-primary text-primary-foreground">
-                {newLeadsCount}
-              </span>
+            {!collapsed && (
+              <>
+                <span className="flex-1">{item.label}</span>
+                {item.id === 'leads' && newLeadsCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-primary text-primary-foreground">
+                    {newLeadsCount}
+                  </span>
+                )}
+              </>
+            )}
+            {collapsed && item.id === 'leads' && newLeadsCount > 0 && (
+              <span
+                className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary ring-2 ring-sidebar"
+                aria-hidden
+              />
             )}
           </button>
         ))}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border">
+      <div className={cn('border-t border-sidebar-border', collapsed ? 'p-2' : 'p-4')}>
         {fbConnected ? (
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-success/10 text-success">
+          <div
+            className={cn(
+              'flex items-center gap-3 rounded-xl bg-success/10 text-success',
+              collapsed ? 'justify-center p-3' : 'px-4 py-3'
+            )}
+            title={collapsed ? 'מחובר לפייסבוק' : undefined}
+          >
             <CheckCircle className="w-5 h-5 shrink-0" />
-            <span className="text-sm">מחובר לפייסבוק</span>
+            {!collapsed && <span className="text-sm">מחובר לפייסבוק</span>}
           </div>
         ) : (
           <Button
             type="button"
-            className="w-full bg-[#1877F2] hover:bg-[#166FE5] text-white"
+            className={cn('w-full bg-[#1877F2] hover:bg-[#166FE5] text-white', collapsed && 'px-2')}
             onClick={onConnectFacebook}
+            title={collapsed ? 'חבר פייסבוק' : undefined}
           >
-            <FBIcon size={18} className="ml-2" />
-            חבר פייסבוק
+            <FBIcon size={18} className={cn(!collapsed && 'ml-2')} />
+            {!collapsed && 'חבר פייסבוק'}
           </Button>
         )}
       </div>
 
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3">
+      <div className={cn('border-t border-sidebar-border', collapsed ? 'p-2' : 'p-4')}>
+        <div className={cn('flex items-center gap-3', collapsed && 'flex-col')}>
           <div className="w-10 h-10 rounded-full gradient-hero flex items-center justify-center text-white font-bold shrink-0">
             {initial}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-medium truncate">{userName || 'משתמש'}</div>
-            <div className="text-xs text-sidebar-foreground/60 truncate">{userEmail}</div>
-          </div>
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <div className="font-medium truncate">{userName || 'משתמש'}</div>
+              <div className="text-xs text-sidebar-foreground/60 truncate">{userEmail}</div>
+            </div>
+          )}
           <button
             type="button"
             onClick={onLogout}
             className="p-2 text-sidebar-foreground/60 hover:text-sidebar-foreground rounded-lg hover:bg-sidebar-accent/50 shrink-0"
             aria-label="התנתקות"
+            title="התנתקות"
           >
             <LogOut className="w-4 h-4" />
           </button>
@@ -166,10 +218,28 @@ function Sidebar({
   )
 }
 
-function TopBar({ title, userInitial }: { title: string; userInitial: string }) {
+function TopBar({
+  title,
+  userInitial,
+  onOpenMobileNav,
+}: {
+  title: string
+  userInitial: string
+  onOpenMobileNav: () => void
+}) {
   return (
-    <div className="h-16 bg-background border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
-      <h1 className="text-xl font-semibold">{title}</h1>
+    <div className="h-16 bg-background border-b border-border flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40 gap-3">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <button
+          type="button"
+          className="md:hidden shrink-0 p-2 rounded-lg hover:bg-muted -me-1"
+          onClick={onOpenMobileNav}
+          aria-label="פתח תפריט"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+        <h1 className="text-xl font-semibold truncate">{title}</h1>
+      </div>
       <div className="flex items-center gap-4">
         <button type="button" className="p-2 rounded-lg hover:bg-muted relative" aria-label="התראות">
           <Bell className="w-5 h-5 text-muted-foreground" />
@@ -247,6 +317,37 @@ export default function DashboardPage() {
   const [publishing, setPublishing] = useState(false)
   const [pubResult, setPubResult] = useState<{ published: number; failed: number } | null>(null)
   const [aiGen, setAiGen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('leadpro-sidebar-collapsed') === '1') setSidebarCollapsed(true)
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  const toggleSidebarCollapsed = useCallback(() => {
+    setSidebarCollapsed((c) => {
+      const next = !c
+      try {
+        localStorage.setItem('leadpro-sidebar-collapsed', next ? '1' : '0')
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+  }, [])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    const onChange = () => {
+      if (mq.matches) setMobileNavOpen(false)
+    }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
 
   const vertCfg = VERTICAL_CONFIG[user?.vertical ?? 'general']
   const selectedGroups = groups.filter((g) => g.isSelected)
@@ -354,6 +455,15 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-muted/30" dir="rtl">
+      {mobileNavOpen && (
+        <button
+          type="button"
+          aria-label="סגור תפריט"
+          className="fixed inset-0 z-40 bg-black/45 md:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
       <Sidebar
         activeTab={tab}
         setActiveTab={setTab}
@@ -364,10 +474,19 @@ export default function DashboardPage() {
         userEmail={user.email ?? ''}
         verticalLabel={vertCfg ? `${vertCfg.emoji} ${vertCfg.label}` : 'כללי'}
         newLeadsCount={leadStats.byStatus.new}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={toggleSidebarCollapsed}
+        mobileOpen={mobileNavOpen}
+        onMobileOpenChange={setMobileNavOpen}
       />
 
-      <div className="pe-64 min-h-screen">
-        <TopBar title={tabTitles[tab]} userInitial={userInitial} />
+      <div
+        className={cn(
+          'min-h-screen max-md:ps-0',
+          sidebarCollapsed ? 'md:ps-[4.5rem]' : 'md:ps-64'
+        )}
+      >
+        <TopBar title={tabTitles[tab]} userInitial={userInitial} onOpenMobileNav={() => setMobileNavOpen(true)} />
 
         {notice && (
           <div className="px-6 py-3 bg-primary/10 text-primary text-sm flex justify-between items-center border-b border-border">
