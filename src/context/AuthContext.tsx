@@ -52,17 +52,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signUp(email: string, password: string, name: string, vertical: string) {
     const { user: fbUser } = await createUserWithEmailAndPassword(auth, email, password)
-    await createUser(fbUser.uid, {
-      email,
-      name,
-      role: 'user',
-      plan: 'free',
-      vertical,
-      facebookConnected: false,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
+    const existing = await getUser(fbUser.uid)
+    if (!existing) {
+      await createUser(fbUser.uid, {
+        email,
+        name,
+        role: 'user',
+        plan: 'free',
+        vertical,
+        facebookConnected: false,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+    }
     await loadUser(fbUser)
   }
 

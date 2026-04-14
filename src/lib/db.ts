@@ -25,7 +25,10 @@ export async function getUser(userId: string): Promise<User | null> {
 }
 
 export async function createUser(userId: string, data: Omit<User, 'id'>): Promise<void> {
-  await setDoc(doc(db, USERS, userId), {
+  const ref = doc(db, USERS, userId)
+  const snap = await getDoc(ref)
+  if (snap.exists()) return
+  await setDoc(ref, {
     ...data,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
