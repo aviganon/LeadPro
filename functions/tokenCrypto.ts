@@ -5,8 +5,8 @@ const KEY_LENGTH = 256
 const IV_LENGTH = 12
 
 async function getKey(): Promise<CryptoKey> {
-  const raw = process.env.TOKEN_ENCRYPTION_KEY
-  if (!raw) throw new Error('TOKEN_ENCRYPTION_KEY env var not set')
+  const raw = process.env.TOKEN_ENCRYPTION_KEY ?? process.env.ENCRYPTION_KEY
+  if (!raw) throw new Error('TOKEN_ENCRYPTION_KEY (or ENCRYPTION_KEY) env var not set')
   const keyBytes = Buffer.from(raw, 'base64')
   return crypto.subtle.importKey('raw', keyBytes, { name: ALGORITHM, length: KEY_LENGTH }, false, ['decrypt'])
 }

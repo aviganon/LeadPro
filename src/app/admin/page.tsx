@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
-import { Target } from 'lucide-react'
+import { APP_LOGO, APP_NAME } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { AdminConsole } from '@/components/admin/AdminConsole'
 
@@ -37,10 +37,14 @@ export default function AdminPage() {
         <div className="container mx-auto px-6">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg gradient-hero flex items-center justify-center">
-                <Target className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-bold text-lg">LeadPro</span>
+              <img
+                src={APP_LOGO}
+                alt={`${APP_NAME} Logo`}
+                className="w-9 h-9 rounded-lg shadow-md object-cover"
+                width={36}
+                height={36}
+              />
+              <span className="font-bold text-lg">{APP_NAME}</span>
               <span className="rounded bg-warning/20 px-2 py-0.5 text-xs font-medium text-warning">Admin</span>
             </Link>
             <Button variant="ghost" size="sm" className="text-sidebar-foreground/70" asChild>

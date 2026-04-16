@@ -1,20 +1,49 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useLeads, usePosts, useScraper, useFacebookGroups } from '@/hooks/useLeads'
+import { LEADS_SEARCH_DEBOUNCE_MS } from '@/lib/appConstants'
+import { APP_LOGO, APP_NAME } from '@/lib/constants'
+import { EmptyState } from '@/components/EmptyState'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { renderTemplate, DEFAULT_TEMPLATES, VERTICAL_CONFIG } from '@/lib/templates'
 import type { LeadStatus, PostStatus } from '@/types'
 import {
-  Target, LayoutDashboard, Users, Megaphone, Settings, Bell, LogOut,
-  Plus, RefreshCw, Calendar, X, CheckCircle, AlertTriangle, Clock,
-  Sparkles, Send, ChevronDown, Search,
-  MoreHorizontal, Zap, Globe, TrendingUp, Menu, ChevronRight, ChevronLeft,
+  LayoutDashboard,
+  Users,
+  Megaphone,
+  Settings,
+  Bell,
+  LogOut,
+  Plus,
+  RefreshCw,
+  Calendar,
+  X,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
+  Sparkles,
+  Send,
+  ChevronDown,
+  Search,
+  MoreHorizontal,
+  Zap,
+  Globe,
+  TrendingUp,
+  Menu,
+  ChevronRight,
+  ChevronLeft,
+  Download,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
@@ -111,12 +140,16 @@ function Sidebar({
     >
       <div className={cn('border-b border-sidebar-border flex items-center gap-2', collapsed ? 'p-3 justify-center flex-col' : 'p-4 md:p-6')}>
         <Link href="/" className={cn('flex items-center gap-3 min-w-0', collapsed && 'justify-center')} onClick={() => onMobileOpenChange(false)}>
-          <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center shrink-0">
-            <Target className="w-5 h-5 text-white" />
-          </div>
+          <img
+            src={APP_LOGO}
+            alt={`${APP_NAME} Logo`}
+            className="w-10 h-10 rounded-xl shadow-md object-cover shrink-0"
+            width={40}
+            height={40}
+          />
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="font-bold text-lg truncate">LeadPro</div>
+              <div className="font-bold text-lg truncate">{APP_NAME}</div>
               <div className="text-xs text-sidebar-foreground/60 truncate">{verticalLabel}</div>
             </div>
           )}
@@ -301,7 +334,6 @@ export default function DashboardPage() {
   const { user, logOut, loading: authLoading } = useAuth()
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('overview')
-  const [notice, setNotice] = useState('')
 
   const { leads, loading: leadsLoading, stats: leadStats, updateStatus } = useLeads(user?.id ?? null)
   const { posts, loading: postsLoading, stats: postStats, cancelPost, fetchPosts } = usePosts(user?.id ?? null)
@@ -321,8 +353,24 @@ export default function DashboardPage() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   useEffect(() => {
+    const order: Tab[] = ['overview', 'leads', 'posts', 'groups', 'compose', 'settings']
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey || e.defaultPrevented) return
+      const n = Number.parseInt(e.key, 10)
+      if (n >= 1 && n <= order.length) {
+        e.preventDefault()
+        setTab(order[n - 1]!)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  useEffect(() => {
     try {
-      if (localStorage.getItem('leadpro-sidebar-collapsed') === '1') setSidebarCollapsed(true)
+      const legacy = localStorage.getItem('leadpro-sidebar-collapsed')
+      const next = localStorage.getItem('apexleads-sidebar-collapsed')
+      if (next === '1' || legacy === '1') setSidebarCollapsed(true)
     } catch {
       /* ignore */
     }
@@ -332,7 +380,7 @@ export default function DashboardPage() {
     setSidebarCollapsed((c) => {
       const next = !c
       try {
-        localStorage.setItem('leadpro-sidebar-collapsed', next ? '1' : '0')
+        localStorage.setItem('apexleads-sidebar-collapsed', next ? '1' : '0')
       } catch {
         /* ignore */
       }
@@ -355,11 +403,22 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!authLoading && !user) router.push('/auth')
     const p = new URLSearchParams(window.location.search)
-    if (p.get('fb_connected') === '1') setNotice('✅ פייסבוק חובר בהצלחה!')
-    if (p.get('fb_error')) setNotice('❌ שגיאה בחיבור פייסבוק')
-    if (p.get('upgrade') === 'success') setNotice('🎉 שדרוג הצליח!')
+    if (p.get('fb_connected') === '1') toast.success('פייסבוק חובר בהצלחה!')
+    if (p.get('fb_error')) toast.error('שגיאה בחיבור פייסבוק')
+    if (p.get('upgrade') === 'success') toast.success('שדרוג הצליח!')
     window.history.replaceState({}, '', '/dashboard')
   }, [authLoading, user, router])
+
+  useEffect(() => {
+    if (!user?.facebookTokenExpiry) return
+    const raw = user.facebookTokenExpiry
+    const exp = raw instanceof Date ? raw : new Date(raw as unknown as string)
+    if (Number.isNaN(exp.getTime())) return
+    const days = (exp.getTime() - Date.now()) / 86_400_000
+    if (days > 0 && days < 7) {
+      toast.warning('טוקן פייסבוק יפוג בקרוב — מומלץ להתחבר מחדש לפייסבוק', { id: 'fb-token-expiry' })
+    }
+  }, [user?.facebookTokenExpiry])
 
   function connectFacebook() {
     if (!user) return
@@ -376,6 +435,7 @@ export default function DashboardPage() {
       const res = await fetch('/api/posts/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           userId: user.id,
           body: postBody,
@@ -385,9 +445,17 @@ export default function DashboardPage() {
       })
       const data = await res.json()
       setPubResult({ published: data.published ?? 0, failed: data.failed ?? 0 })
-      if (data.success) {
+      if (res.status === 429) {
+        toast.error('חרגת ממגבלת הפרסומים לשעה — נסה שוב מאוחר יותר')
+      } else if (data.success) {
+        const pub = typeof data.published === 'number' ? data.published : 0
+        toast.success(pub > 0 ? `פורסם בהצלחה ל-${pub} קבוצות` : 'הפוסט נשלח בהצלחה')
         setPostBody('')
         setSchedAt('')
+      } else if (data.error) {
+        toast.error(String(data.error))
+      } else if (typeof data.failed === 'number' && data.failed > 0) {
+        toast.error(`נכשל פרסום ל-${data.failed} קבוצות`)
       }
       fetchPosts()
     } finally {
@@ -403,12 +471,21 @@ export default function DashboardPage() {
       const res = await fetch('/api/ai/generate-post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
+          userId: user.id,
           prompt: `כתוב פוסט קצר ומזמין בעברית (עד 120 מילים) לפרסום בקבוצת פייסבוק בתחום ${cfg?.label ?? 'כללי'}. כלול קריאה לפעולה ואמוג'י. ללא כותרת.`,
         }),
       })
       const data = await res.json()
-      if (data.text) setPostBody(data.text)
+      if (res.status === 429) {
+        toast.error('חרגת ממגבלת בקשות ה-AI — נסה שוב מאוחר יותר')
+      } else if (data.text) {
+        setPostBody(data.text)
+        toast.success('טקסט נוצר')
+      } else if (data.error) {
+        toast.error(String(data.error))
+      }
     } finally {
       setAiGen(false)
     }
@@ -487,15 +564,6 @@ export default function DashboardPage() {
         )}
       >
         <TopBar title={tabTitles[tab]} userInitial={userInitial} onOpenMobileNav={() => setMobileNavOpen(true)} />
-
-        {notice && (
-          <div className="px-6 py-3 bg-primary/10 text-primary text-sm flex justify-between items-center border-b border-border">
-            <span>{notice}</span>
-            <button type="button" onClick={() => setNotice('')} className="p-1 rounded hover:bg-primary/20" aria-label="סגור">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
 
         <main className="p-6">
           {tab === 'overview' && (
@@ -640,6 +708,7 @@ export default function DashboardPage() {
 
           {tab === 'leads' && (
             <LeadsPanel
+              userId={user.id}
               leads={leads}
               leadsLoading={leadsLoading}
               leadStats={leadStats}
@@ -667,7 +736,7 @@ export default function DashboardPage() {
               selectedCount={selectedGroups.length}
               syncing={syncing}
               fbConnected={!!user.facebookConnected}
-              onSync={syncGroups}
+              onSync={() => void syncGroups({ forceRefresh: true })}
               onToggle={toggleGroup}
             />
           )}
@@ -753,7 +822,8 @@ export default function DashboardPage() {
   )
 }
 
-function LeadsPanel({
+const LeadsPanel = memo(function LeadsPanel({
+  userId,
   leads,
   leadsLoading,
   leadStats,
@@ -762,6 +832,7 @@ function LeadsPanel({
   updateStatus,
   onRunScraper,
 }: {
+  userId: string
   leads: import('@/types').Lead[]
   leadsLoading: boolean
   leadStats: ReturnType<typeof useLeads>['stats']
@@ -772,12 +843,36 @@ function LeadsPanel({
 }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all')
+  const debouncedSearch = useDebouncedValue(searchTerm, LEADS_SEARCH_DEBOUNCE_MS)
 
   const filtered = leads.filter((lead) => {
-    const okSearch = lead.notes.toLowerCase().includes(searchTerm.toLowerCase())
+    const okSearch = lead.notes.toLowerCase().includes(debouncedSearch.toLowerCase())
     const okStatus = statusFilter === 'all' || lead.status === statusFilter
     return okSearch && okStatus
   })
+
+  async function exportCsv() {
+    try {
+      const res = await fetch('/api/leads/export', { credentials: 'include' })
+      if (!res.ok) {
+        toast.error('ייצוא נכשל')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `leads-${userId.slice(0, 8)}.csv`
+      a.rel = 'noopener'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast.success('קובץ CSV הורד')
+    } catch {
+      toast.error('ייצוא נכשל')
+    }
+  }
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -787,11 +882,20 @@ function LeadsPanel({
           <p className="text-muted-foreground text-sm">
             {leadStats.total} לידים · {leadStats.byStatus.new} חדשים · {leadStats.byStatus.converted} המרות
           </p>
+          <p className="text-xs text-muted-foreground mt-1 hidden sm:block" aria-hidden>
+            קיצור דרך: Alt+1–6 למעבר בין לשוניות
+          </p>
         </div>
-        <Button type="button" className="btn-shimmer" disabled={scraperRunning} onClick={onRunScraper}>
-          <RefreshCw className={cn('w-4 h-4 ml-2', scraperRunning && 'animate-spin')} />
-          {scraperRunning ? 'אוסף...' : 'אסוף לידים'}
-        </Button>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <Button type="button" className="btn-shimmer flex-1 sm:flex-none" disabled={scraperRunning} onClick={onRunScraper}>
+            <RefreshCw className={cn('w-4 h-4 ml-2', scraperRunning && 'animate-spin')} />
+            {scraperRunning ? 'אוסף...' : 'אסוף לידים'}
+          </Button>
+          <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={() => void exportCsv()}>
+            <Download className="w-4 h-4 ml-2" aria-hidden />
+            ייצוא CSV
+          </Button>
+        </div>
       </div>
       {lastCount !== null && (
         <p className="text-sm text-success">✅ {lastCount} לידים חדשים נוספו</p>
@@ -835,9 +939,24 @@ function LeadsPanel({
       </div>
 
       {leadsLoading ? (
-        <p className="text-center text-muted-foreground py-12">טוען...</p>
+        <div className="space-y-3 py-4" role="status" aria-label="טוען לידים">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : leads.length === 0 ? (
+        <Card className="border-dashed border-2 bg-muted/20">
+          <CardContent className="py-8">
+            <EmptyState
+              icon={Users}
+              title="אין לידים עדיין"
+              description="התחל לאסוף לידים מפלטפורמות שונות או חבר את חשבון הפייסבוק שלך"
+              action={{ label: 'אסוף לידים', onClick: onRunScraper }}
+            />
+          </CardContent>
+        </Card>
       ) : filtered.length === 0 ? (
-        <p className="text-center text-muted-foreground py-12">אין תוצאות</p>
+        <p className="text-center text-muted-foreground py-12">אין תוצאות לחיפוש או לסינון הנוכחי</p>
       ) : (
         <div className="space-y-3">
           {filtered.map((lead, index) => (
@@ -866,6 +985,7 @@ function LeadsPanel({
                     </div>
                   </div>
                   <select
+                    aria-label="סטטוס ליד"
                     value={lead.status}
                     onChange={(e) => updateStatus(lead.id, e.target.value as LeadStatus)}
                     className={cn(
@@ -888,9 +1008,9 @@ function LeadsPanel({
       )}
     </div>
   )
-}
+})
 
-function PostsPanel({
+const PostsPanel = memo(function PostsPanel({
   posts,
   postsLoading,
   postStats,
@@ -905,8 +1025,26 @@ function PostsPanel({
   postStatusUi: (s: PostStatus) => { label: string; color: string; bg: string; icon: React.ElementType }
   onNewPost: () => void
 }) {
+  const [cancelId, setCancelId] = useState<string | null>(null)
+
   return (
     <div className="space-y-6 animate-slide-up">
+      <ConfirmDialog
+        open={!!cancelId}
+        onOpenChange={(open) => {
+          if (!open) setCancelId(null)
+        }}
+        title="לבטל פרסום?"
+        description="הפרסום יסומן כמושהה."
+        confirmText="בטל"
+        variant="destructive"
+        onConfirm={() => {
+          if (cancelId) {
+            cancelPost(cancelId)
+            setCancelId(null)
+          }
+        }}
+      />
       <div className="flex gap-3 flex-wrap items-center">
         <div className="px-4 py-2 rounded-lg bg-success/10 text-success font-medium">{postStats.published} פורסמו</div>
         <div className="px-4 py-2 rounded-lg bg-primary/10 text-primary font-medium">{postStats.scheduled} מתוזמנים</div>
@@ -920,9 +1058,19 @@ function PostsPanel({
       </div>
 
       {postsLoading ? (
-        <p className="text-center text-muted-foreground py-12">טוען...</p>
+        <div className="space-y-4 py-4" role="status" aria-label="טוען פרסומים">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+          ))}
+        </div>
       ) : posts.length === 0 ? (
-        <p className="text-center text-muted-foreground py-12">אין פרסומים עדיין</p>
+        <Card className="border-dashed border-2 bg-muted/20">
+          <CardContent className="py-14 text-center text-muted-foreground space-y-2">
+            <Megaphone className="w-12 h-12 mx-auto opacity-40" aria-hidden />
+            <p className="font-medium text-foreground">אין פרסומים עדיין</p>
+            <p className="text-sm">עברו ללשונית &quot;פרסום חדש&quot; כדי ליצור ולפרסם פוסט לקבוצות.</p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-4">
           {posts.map((post, index) => {
@@ -953,7 +1101,7 @@ function PostsPanel({
                         <button
                           type="button"
                           className="p-2 rounded-lg hover:bg-muted"
-                          onClick={() => cancelPost(post.id)}
+                          onClick={() => setCancelId(post.id)}
                           aria-label="בטל"
                         >
                           <X className="w-4 h-4 text-muted-foreground" />
@@ -969,7 +1117,7 @@ function PostsPanel({
       )}
     </div>
   )
-}
+})
 
 function GroupsPanel({
   groups,
@@ -996,8 +1144,17 @@ function GroupsPanel({
           </p>
         </div>
         <Button type="button" variant="outline" disabled={syncing || !fbConnected} onClick={onSync}>
-          <RefreshCw className={cn('w-4 h-4 ml-2', syncing && 'animate-spin')} />
-          {syncing ? 'מסנכרן...' : 'סנכרן'}
+          {syncing ? (
+            <>
+              <Loader2 className="w-4 h-4 ml-2 animate-spin" aria-hidden />
+              מסנכרן...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="w-4 h-4 ml-2" aria-hidden />
+              סנכרן קבוצות
+            </>
+          )}
         </Button>
       </div>
       {!fbConnected && (

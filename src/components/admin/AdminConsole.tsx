@@ -26,6 +26,14 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import {
+  BarChart as RechartsBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
+import {
   Activity,
   AlertTriangle,
   BarChart3,
@@ -283,6 +291,11 @@ function AdminStatsTab({ users, aggregate }: { users: AdminUserRow[]; aggregate:
   ]
 
   const topUsers = [...users].sort((a, b) => b.leadsCount - a.leadsCount).slice(0, 5)
+  const chartData = topUsers.map((u) => ({
+    name: u.name.trim().slice(0, 14) || u.email.slice(0, 14),
+    leads: u.leadsCount,
+    posts: u.postsCount,
+  }))
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -307,6 +320,26 @@ function AdminStatsTab({ users, aggregate }: { users: AdminUserRow[]; aggregate:
           </Card>
         ))}
       </div>
+
+      {chartData.length > 0 && (
+        <Card className="border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle>גרף לידים ופרסומים (מובילים)</CardTitle>
+            <CardDescription>חמשת המשתמשים עם הכי הרבה לידים</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[260px] w-full min-w-0" dir="ltr">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsBarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={56} />
+                <YAxis allowDecimals={false} width={40} />
+                <Tooltip />
+                <Bar dataKey="leads" name="לידים" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="posts" name="פרסומים" fill="hsl(var(--muted-foreground) / 0.35)" radius={[4, 4, 0, 0]} />
+              </RechartsBarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border-0 shadow-lg">
         <CardHeader>

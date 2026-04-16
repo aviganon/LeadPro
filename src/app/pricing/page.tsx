@@ -3,13 +3,23 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
-import { 
-  Target, Check, Zap, ArrowLeft, Star, Users, 
-  Sparkles, TrendingUp, HelpCircle, ChevronDown,
-  Building2, Globe, Shield
+import {
+  Check,
+  Zap,
+  ArrowLeft,
+  Star,
+  Users,
+  Sparkles,
+  TrendingUp,
+  HelpCircle,
+  ChevronDown,
+  Building2,
+  Globe,
+  Shield,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { APP_LOGO, APP_NAME } from '@/lib/constants'
 
 interface Plan {
   id: string
@@ -135,10 +145,14 @@ function Navbar() {
     <nav className="bg-background/80 backdrop-blur-lg border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
-            <Target className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold gradient-text">LeadPro</span>
+          <img
+            src={APP_LOGO}
+            alt={`${APP_NAME} Logo`}
+            className="w-10 h-10 rounded-xl shadow-md object-cover"
+            width={40}
+            height={40}
+          />
+          <span className="text-xl font-bold gradient-text">{APP_NAME}</span>
         </Link>
 
         <div className="flex items-center gap-4">
@@ -170,7 +184,7 @@ function PricingCard({ plan, isAnnual }: { plan: Plan; isAnnual: boolean }) {
       return
     }
     if (plan.id === 'enterprise') {
-      window.location.href = 'mailto:hello@leadpro.co.il'
+      window.location.href = 'mailto:hello@apexleads.co.il'
       return
     }
 
@@ -184,6 +198,7 @@ function PricingCard({ plan, isAnnual }: { plan: Plan; isAnnual: boolean }) {
       const res = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ userId: user.id, plan: plan.id }),
       })
       const data = await res.json()
@@ -346,7 +361,7 @@ function CTASection() {
             </Link>
           </Button>
           <Button size="lg" variant="outline" className="px-8 py-6 text-lg border-white/30 text-white hover:bg-white/10" asChild>
-            <Link href="mailto:hello@leadpro.co.il">דבר איתנו</Link>
+            <Link href="mailto:hello@apexleads.co.il">דבר איתנו</Link>
           </Button>
         </div>
       </div>
@@ -360,10 +375,14 @@ function Footer() {
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-hero flex items-center justify-center">
-              <Target className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold">LeadPro</span>
+            <img
+              src={APP_LOGO}
+              alt={`${APP_NAME} Logo`}
+              className="w-8 h-8 rounded-lg shadow-sm object-cover"
+              width={32}
+              height={32}
+            />
+            <span className="font-bold">{APP_NAME}</span>
           </Link>
           
           <div className="flex items-center gap-6 text-sm text-sidebar-foreground/70">
@@ -373,7 +392,7 @@ function Footer() {
           </div>
           
           <p className="text-sm text-sidebar-foreground/70">
-            &copy; 2026 LeadPro. כל הזכויות שמורות.
+            &copy; 2026 {APP_NAME}. כל הזכויות שמורות.
           </p>
         </div>
       </div>

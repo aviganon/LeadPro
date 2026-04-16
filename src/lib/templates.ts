@@ -89,7 +89,8 @@ export function extractVariables(template: string): string[] {
 export async function generatePostFromLead(
   lead: Partial<Lead>,
   vertical: LeadVertical,
-  agentInfo: { name: string; phone: string; city?: string }
+  agentInfo: { name: string; phone: string; city?: string },
+  userId: string
 ): Promise<string> {
   const prompt = buildLeadPrompt(lead, vertical, agentInfo)
 
@@ -97,7 +98,8 @@ export async function generatePostFromLead(
     const res = await fetch('/api/ai/generate-post', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
+      credentials: 'include',
+      body: JSON.stringify({ prompt, userId }),
     })
     const data = await res.json()
     return data.text ?? fallbackPost(vertical, agentInfo)

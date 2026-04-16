@@ -1,17 +1,19 @@
-// AES-256-GCM encryption for Facebook access tokens stored in Firestore
-// ENCRYPTION_KEY must be 32 bytes base64 — generate with: openssl rand -base64 32
+// AES-256-GCM encryption for Facebook access tokens stored in Firestore.
+// Use TOKEN_ENCRYPTION_KEY (preferred) or ENCRYPTION_KEY — 32 bytes base64:
+// openssl rand -base64 32
 
 const ALGORITHM = 'AES-GCM'
 const KEY_LENGTH = 256
 const IV_LENGTH = 12   // 96 bits for GCM
 
 async function getKey(): Promise<CryptoKey> {
-  const raw = process.env.TOKEN_ENCRYPTION_KEY
-  if (!raw) throw new Error('TOKEN_ENCRYPTION_KEY env var not set')
+  const raw = process.env.TOKEN_ENCRYPTION_KEY ?? process.env.ENCRYPTION_KEY
+  if (!raw) throw new Error('TOKEN_ENCRYPTION_KEY (or ENCRYPTION_KEY) env var not set')
   const keyBytes = Buffer.from(raw, 'base64')
   return crypto.subtle.importKey('raw', keyBytes, { name: ALGORITHM, length: KEY_LENGTH }, false, ['encrypt', 'decrypt'])
 }
 
+/** Encrypts a secret for storage (e.g. Facebook long-lived token). */
 export async function encryptToken(plaintext: string): Promise<string> {
   const key = await getKey()
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH))
@@ -24,6 +26,7 @@ export async function encryptToken(plaintext: string): Promise<string> {
   return Buffer.from(combined).toString('base64')
 }
 
+/** Decrypts a value produced by {@link encryptToken}. */
 export async function decryptToken(encryptedBase64: string): Promise<string> {
   const key = await getKey()
   const combined = Buffer.from(encryptedBase64, 'base64')

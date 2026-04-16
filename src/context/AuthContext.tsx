@@ -46,6 +46,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsub
   }, [])
 
+  useEffect(() => {
+    const user = firebaseUser
+    if (!user) return
+
+    async function checkAndRefreshToken(fbUser: FirebaseUser) {
+      try {
+        const tokenResult = await fbUser.getIdTokenResult()
+        const expirationTime = new Date(tokenResult.expirationTime).getTime()
+        const now = Date.now()
+        const fiveMinutes = 5 * 60 * 1000
+        if (expirationTime - now < fiveMinutes) {
+          await fbUser.getIdToken(true)
+        }
+      } catch (error) {
+        console.error('Failed to refresh token:', error)
+      }
+    }
+
+    const interval = setInterval(() => {
+      void checkAndRefreshToken(user)
+    }, 4 * 60 * 1000)
+    void checkAndRefreshToken(user)
+    return () => clearInterval(interval)
+  }, [firebaseUser])
+
   async function signIn(email: string, password: string) {
     await signInWithEmailAndPassword(auth, email, password)
   }

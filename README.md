@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ApexLeads
 
-## Getting Started
+Next.js (App Router) אפליקציה לניהול לידים, פרסום בקבוצות פייסבוק ו-AI ליצירת תוכן.
 
-First, run the development server:
+## התחלה מהירה
 
 ```bash
+npm install
+cp .env.example .env.local
+# מלא משתני סביבה (Firebase, Stripe, וכו')
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+פתחו [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## סקריפטים
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` — שרת פיתוח
+- `npm run build` — בנייה לפרודקשן
+- `npm run start` — הרצת build
+- `npm run lint` — ESLint
 
-## Learn More
+## אבטחה (חשוב בפרודקשן)
 
-To learn more about Next.js, take a look at the following resources:
+- **Session**: מסלולי `/api/*` דורשים עוגיית `__session` (מסונכרנת ב-`SessionSync`). בקשות ללא סשן מקבלות `401` JSON (לא הפניה ל-HTML).
+- **זהות**: בנתיבי API עם `userId` בגוף או ב-query, השרת מאמת ש-`userId` תואם ל-UID מהטוקן (`verifyApiAuth` + `requireMatchingUser`).
+- **Rate limiting**: עם `UPSTASH_REDIS_REST_URL` ו-`UPSTASH_REDIS_REST_TOKEN` משתמשים ב-Upstash; בלי זה — מגבלה בזיכרון (מתאים בעיקר לפיתוח / מופע יחיד).
+- **כותרות אבטחה**: מוגדרות ב-`next.config.ts` (frameguard, nosniff, וכו').
+- **טוקנים**: טוקני פייסבוק נשמרים מוצפנים (AES-GCM); מפתח ב-`TOKEN_ENCRYPTION_KEY` או `ENCRYPTION_KEY`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## קבצי סביבה
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+ראו `.env.example` ו-`.env.local.example` לרשימת משתנים.
 
-## Deploy on Vercel
+## מבנה עיקרי
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `src/app` — דפים ו-API routes
+- `src/lib` — Firebase Admin, אימות API, rate limit, הצפנה
+- `src/hooks` — `useLeads`, `usePosts`, `useDebouncedValue`, וכו'
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## רישיון
+
+פרטי הרישיון לפי המאגר שלכם.

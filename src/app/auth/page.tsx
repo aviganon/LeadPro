@@ -5,10 +5,24 @@ import type { FormEvent } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
-import { 
-  Target, Eye, EyeOff, ArrowLeft, Mail, Lock, User, Building2, 
-  Car, Briefcase, CheckCircle, Sparkles, Zap, TrendingUp
+import {
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  Mail,
+  Lock,
+  User,
+  Building2,
+  Car,
+  Briefcase,
+  CheckCircle,
+  Sparkles,
+  Zap,
+  TrendingUp,
+  Target,
 } from 'lucide-react'
+import { APP_LOGO, APP_NAME } from '@/lib/constants'
+import { syncSessionCookies } from '@/lib/sessionCookieClient'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -75,10 +89,12 @@ function AuthPageContent() {
       const redirectTo = searchParams.get('redirect') || '/dashboard'
       if (mode === 'login') {
         await signIn(email, password)
-        router.push(redirectTo)
+        await syncSessionCookies()
+        router.replace(redirectTo)
       } else if (mode === 'signup') {
         await signUp(email, password, name, vertical)
-        router.push(redirectTo)
+        await syncSessionCookies()
+        router.replace(redirectTo)
       } else {
         await resetPassword(email)
         setResetSent(true)
@@ -154,16 +170,20 @@ function AuthPageContent() {
         
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-12 text-white">
-          <Link href="/" className="flex items-center gap-2 mb-12">
-            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
-              <Target className="w-6 h-6" />
-            </div>
-            <span className="text-2xl font-bold">LeadPro</span>
+          <Link href="/" className="flex items-center gap-3 mb-12">
+            <img
+              src={APP_LOGO}
+              alt={`${APP_NAME} Logo`}
+              className="w-14 h-14 rounded-xl shadow-lg object-cover"
+              width={56}
+              height={56}
+            />
+            <span className="text-2xl font-bold">{APP_NAME}</span>
           </Link>
-          
+
           <h1 className="text-4xl font-bold mb-4 leading-tight">
-            הגדל את המכירות שלך<br />
-            עם לידים חמים
+            הגיע לפסגה<br />
+            עם <span className="text-white/90">{APP_NAME}</span>
           </h1>
           
           <p className="text-xl text-white/80 mb-8 max-w-md">
@@ -188,10 +208,14 @@ function AuthPageContent() {
         <div className="w-full max-w-md animate-scale-in">
           {/* Mobile logo */}
           <Link href="/" className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center">
-              <Target className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold gradient-text">LeadPro</span>
+            <img
+              src={APP_LOGO}
+              alt={`${APP_NAME} Logo`}
+              className="w-12 h-12 rounded-xl shadow-md object-cover"
+              width={48}
+              height={48}
+            />
+            <span className="text-xl font-bold gradient-text">{APP_NAME}</span>
           </Link>
 
           <Card className="border-0 shadow-xl">
@@ -262,7 +286,8 @@ function AuthPageContent() {
                           placeholder="ישראל ישראלי"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          className="pr-10"
+                          dir="ltr"
+                          className="pr-10 text-left"
                           required
                         />
                       </div>
@@ -279,7 +304,9 @@ function AuthPageContent() {
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pr-10"
+                        dir="ltr"
+                        autoComplete="email"
+                        className="pr-10 text-left"
                         required
                       />
                     </div>
@@ -296,7 +323,9 @@ function AuthPageContent() {
                           placeholder={mode === 'signup' ? 'לפחות 6 תווים' : '••••••••'}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="pr-10 pl-10"
+                          dir="ltr"
+                          autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                          className="pr-10 pl-10 text-left"
                           required
                         />
                         <button

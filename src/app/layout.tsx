@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { Toaster } from 'sonner'
 import { AuthProvider } from '@/context/AuthContext'
 import { SessionSync } from '@/components/SessionSync'
 
@@ -16,14 +17,17 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'LeadPro - ניהול לידים ופרסום חכם',
+  title: 'ApexLeads - ניהול לידים ופרסום חכם',
   description:
     'פלטפורמת SaaS מתקדמת לאיסוף לידים ופרסום אוטומטי בקבוצות פייסבוק. הגדל את המכירות שלך עם AI.',
-  generator: 'LeadPro',
-  keywords: ['לידים', 'פרסום', 'פייסבוק', 'נדלן', 'רכב', 'AI', 'אוטומציה'],
-  authors: [{ name: 'LeadPro Team' }],
+  generator: 'ApexLeads',
+  keywords: ['לידים', 'פרסום', 'פייסבוק', 'נדלן', 'רכב', 'AI', 'אוטומציה', 'ApexLeads'],
+  authors: [{ name: 'ApexLeads Team' }],
+  manifest: '/manifest.json',
   icons: {
     icon: [
+      { url: '/logo-apexleads.jpg', sizes: '32x32', type: 'image/jpeg' },
+      { url: '/logo-apexleads.jpg', sizes: '16x16', type: 'image/jpeg' },
       {
         url: '/icon-light-32x32.png',
         media: '(prefers-color-scheme: light)',
@@ -37,7 +41,7 @@ export const metadata: Metadata = {
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
+    apple: [{ url: '/logo-apexleads.jpg', sizes: '180x180', type: 'image/jpeg' }],
   },
 }
 
@@ -61,6 +65,7 @@ export default function RootLayout({
         <AuthProvider>
           <SessionSync />
           {children}
+          <Toaster richColors position="top-center" dir="rtl" closeButton />
         </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

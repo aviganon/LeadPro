@@ -3,13 +3,18 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { getPostInsights } from '@/lib/facebook'
 import { getAdminFirestore } from '@/lib/firebaseAdmin'
 import { getFacebookAccessTokenForUser } from '@/lib/fbAccessToken'
+import { verifyApiAuth, requireMatchingUser } from '@/lib/apiAuth'
 
 // POST /api/posts/analytics
 // Fetches insights for all published posts of a user and updates Firestore
 export async function POST(req: NextRequest) {
   try {
+    const auth = await verifyApiAuth(req)
+    if (!auth.ok) return auth.response
+
     const { userId } = await req.json()
-    if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
+    const own = requireMatchingUser(auth.uid, typeof userId === 'string' ? userId : null)
+    if (!own.ok) return own.response
 
     const tokenData = await getFacebookAccessTokenForUser(userId)
     if (!tokenData) return NextResponse.json({ error: 'Not connected' }, { status: 401 })

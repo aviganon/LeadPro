@@ -1,4 +1,4 @@
-# LeadPro — מדריך התקנה מלא
+# ApexLeads — מדריך התקנה מלא
 
 ## 1. Firebase — יצירת פרויקט
 
@@ -82,13 +82,13 @@ Service Usage Consumer
 
 ```bash
 # צור products ו-prices ב-Stripe:
-stripe products create --name="LeadPro Basic"
+stripe products create --name="ApexLeads Basic"
 stripe prices create --product=<id> --unit-amount=9900 --currency=ils --recurring[interval]=month
 
-stripe products create --name="LeadPro Pro"  
+stripe products create --name="ApexLeads Pro"
 stripe prices create --product=<id> --unit-amount=29900 --currency=ils --recurring[interval]=month
 
-stripe products create --name="LeadPro Enterprise"
+stripe products create --name="ApexLeads Enterprise"
 stripe prices create --product=<id> --unit-amount=99900 --currency=ils --recurring[interval]=month
 ```
 

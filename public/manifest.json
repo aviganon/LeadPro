@@ -1,0 +1,23 @@
+{
+  "name": "ApexLeads",
+  "short_name": "ApexLeads",
+  "description": "פלטפורמת SaaS מתקדמת לאיסוף לידים ופרסום אוטומטי",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F6AF5",
+  "dir": "rtl",
+  "lang": "he",
+  "icons": [
+    {
+      "src": "/logo-apexleads.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/logo-apexleads.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

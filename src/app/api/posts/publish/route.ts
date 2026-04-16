@@ -3,19 +3,26 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { publishToMultipleGroups } from '@/lib/facebook'
 import { getAdminFirestore } from '@/lib/firebaseAdmin'
 import { getFacebookAccessTokenForUser } from '@/lib/fbAccessToken'
-import { rateLimit, rateLimitResponse } from '@/lib/rateLimit'
+import { verifyApiAuth, requireMatchingUser } from '@/lib/apiAuth'
+import { rateLimitCheck, rateLimitResponse } from '@/lib/rateLimit'
 
 // POST /api/posts/publish
 // Body: { userId, postId?, body, groupIds, scheduledAt? }
 export async function POST(req: NextRequest) {
   try {
+    const auth = await verifyApiAuth(req)
+    if (!auth.ok) return auth.response
+
     const { userId, body, groupIds, scheduledAt } = await req.json()
 
-    if (!userId || !body || !groupIds?.length) {
+    const own = requireMatchingUser(auth.uid, typeof userId === 'string' ? userId : null)
+    if (!own.ok) return own.response
+
+    if (!body || !groupIds?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const rl = rateLimit(userId, 'publish')
+    const rl = await rateLimitCheck(userId, 'publish')
     if (!rl.ok) return rateLimitResponse(rl)
 
     const tokenData = await getFacebookAccessTokenForUser(userId)

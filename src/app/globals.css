@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* LeadPro Brand Colors - Vibrant Blue & Teal */
+  /* ApexLeads Brand Colors - Vibrant Blue & Teal */
   --background: oklch(0.99 0.005 250);
   --foreground: oklch(0.13 0.02 260);
   --card: oklch(1 0 0);

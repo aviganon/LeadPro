@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { APP_LOGO, APP_NAME } from '@/lib/constants'
 
 function FloatingElement({ className, delay = 0 }: { className?: string; delay?: number }) {
   return (
@@ -35,11 +36,15 @@ function Navbar() {
     }`}>
       <div className="container mx-auto px-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Target className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <img
+            src={APP_LOGO}
+            alt={`${APP_NAME} Logo`}
+            className="w-10 h-10 rounded-xl shadow-md object-cover group-hover:scale-110 transition-transform"
+            width={40}
+            height={40}
+          />
           <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-l from-primary to-accent">
-            LeadPro
+            {APP_NAME}
           </span>
         </Link>
 
@@ -52,7 +57,7 @@ function Navbar() {
             תמחור
           </Link>
           <Link href="#why" className="text-muted-foreground hover:text-foreground transition-colors">
-            למה LeadPro
+            למה {APP_NAME}
           </Link>
         </div>
 
@@ -88,7 +93,7 @@ function Navbar() {
               תמחור
             </Link>
             <Link href="#why" className="py-2 text-muted-foreground hover:text-foreground">
-              למה LeadPro
+              למה {APP_NAME}
             </Link>
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" asChild>
@@ -127,8 +132,8 @@ function HeroSection() {
 
           {/* Main heading */}
           <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6">
-            <span className="block">לידים חמים.</span>
-            <span className="gradient-text">פרסום חכם.</span>
+            <span className="block">הגיע לפסגה.</span>
+            <span className="gradient-text">עם {APP_NAME}.</span>
           </h1>
 
           <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
@@ -339,7 +344,7 @@ function WhySection() {
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            למה <span className="gradient-text">LeadPro</span>
+            למה <span className="gradient-text">{APP_NAME}</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             ללא המלצות בדויות — אלה היכולות שמוצגות במוצר בפועל (נתונים ב-Firestore ובחשבונות המשתמש).
@@ -399,10 +404,14 @@ function Footer() {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg gradient-hero flex items-center justify-center">
-                <Target className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-lg font-bold">LeadPro</span>
+              <img
+                src={APP_LOGO}
+                alt={`${APP_NAME} Logo`}
+                className="w-8 h-8 rounded-lg shadow-sm object-cover"
+                width={32}
+                height={32}
+              />
+              <span className="text-lg font-bold">{APP_NAME}</span>
             </Link>
             <p className="text-sidebar-foreground/70 text-sm">
               פלטפורמת הלידים והפרסום המתקדמת בישראל
@@ -438,7 +447,7 @@ function Footer() {
         
         <div className="border-t border-sidebar-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-sidebar-foreground/70">
-            © 2026 LeadPro. כל הזכויות שמורות.
+            © 2026 {APP_NAME}. כל הזכויות שמורות.
           </p>
           <div className="flex gap-4">
             <a href="#" className="text-sidebar-foreground/70 hover:text-sidebar-foreground">

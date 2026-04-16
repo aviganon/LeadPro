@@ -4,6 +4,7 @@ import { PLAN_PRICES } from '@/lib/billingPlans'
 import { updateUser } from '@/lib/db'
 import { db } from '@/lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
+import { verifyApiAuth, requireMatchingUser } from '@/lib/apiAuth'
 
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY
@@ -14,9 +15,14 @@ function getStripe() {
 // POST /api/billing/checkout
 export async function POST(req: NextRequest) {
   try {
-    const { userId, plan } = await req.json()
+    const auth = await verifyApiAuth(req)
+    if (!auth.ok) return auth.response
 
-    if (!userId || !plan || !PLAN_PRICES[plan]) {
+    const { userId, plan } = await req.json()
+    const own = requireMatchingUser(auth.uid, typeof userId === 'string' ? userId : null)
+    if (!own.ok) return own.response
+
+    if (!plan || !PLAN_PRICES[plan]) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
 
