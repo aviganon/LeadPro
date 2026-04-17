@@ -8,7 +8,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: me-west1
-  SERVICE_NAME: leadpro
+  SERVICE_NAME: leadpr
   IMAGE: gcr.io/${{ secrets.GCP_PROJECT_ID }}/leadpro
 
 jobs:
@@ -73,7 +73,8 @@ jobs:
               ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,\
               STRIPE_SECRET_KEY=STRIPE_SECRET_KEY:latest,\
               STRIPE_WEBHOOK_SECRET=STRIPE_WEBHOOK_SECRET:latest,\
-              TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:latest"
+              TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:latest,\
+              TOKEN_ENCRYPTION_KEY=TOKEN_ENCRYPTION_KEY:latest"
 
       - name: Get Service URL
         run: |
