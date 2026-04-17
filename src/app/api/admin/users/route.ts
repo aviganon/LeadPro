@@ -4,7 +4,7 @@ import { getAdminAuth, getAdminFirestore } from '@/lib/firebaseAdmin'
 import { requireAdminSession } from '@/lib/adminAuth'
 
 const PLANS = ['free', 'basic', 'pro', 'enterprise'] as const
-const VERTICALS = ['real_estate', 'car', 'general'] as const
+const VERTICALS = ['real_estate', 'car', 'general', 'recruitment'] as const
 const ROLES = ['admin', 'user'] as const
 
 export async function POST(req: NextRequest) {
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
       role: r,
       plan: p,
       vertical: v,
+      scrapeVertical: v,
       facebookConnected: false,
       isActive: true,
       createdAt: FieldValue.serverTimestamp(),

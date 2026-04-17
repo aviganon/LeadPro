@@ -1,10 +1,11 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getAdminAuth, getAdminFirestore } from '@/lib/firebaseAdmin'
+import { decodeSessionCookieToken } from '@/lib/sessionCookieCodec'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
-  const session = cookieStore.get('__session')?.value
+  const session = decodeSessionCookieToken(cookieStore.get('__session')?.value)
   if (!session) {
     redirect('/auth?redirect=/admin')
   }

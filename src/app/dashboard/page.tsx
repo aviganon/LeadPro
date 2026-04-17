@@ -1,18 +1,20 @@
 'use client'
 
-import { useState, useEffect, useCallback, memo } from 'react'
+import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
+import { updateUser } from '@/lib/db'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useLeads, usePosts, useScraper, useFacebookGroups } from '@/hooks/useLeads'
 import { LEADS_SEARCH_DEBOUNCE_MS } from '@/lib/appConstants'
 import { APP_LOGO, APP_NAME } from '@/lib/constants'
 import { EmptyState } from '@/components/EmptyState'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { getFacebookAuthUrl, getFacebookAppId, isValidFacebookAppId } from '@/lib/facebook'
 import { renderTemplate, DEFAULT_TEMPLATES, VERTICAL_CONFIG } from '@/lib/templates'
-import type { LeadStatus, PostStatus } from '@/types'
+import type { LeadStatus, LeadVertical, PostStatus, User } from '@/types'
 import {
   LayoutDashboard,
   Users,
@@ -42,6 +44,14 @@ import {
   Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
@@ -93,6 +103,20 @@ const tabTitles: Record<Tab, string> = {
   settings: 'הגדרות',
 }
 
+const SCRAPE_VERTICAL_KEYS = ['real_estate', 'car', 'general', 'recruitment'] as const
+
+function isSavedScrapeVertical(v: unknown): v is (typeof SCRAPE_VERTICAL_KEYS)[number] {
+  return typeof v === 'string' && (SCRAPE_VERTICAL_KEYS as readonly string[]).includes(v)
+}
+
+/** ברירת מחדל לאיסוף — זהה ללוגיקת ה-UI (כולל אדמין+כללי → נדל״ן) */
+function defaultScrapeVerticalForUser(user: Pick<User, 'vertical' | 'role'>): LeadVertical {
+  const v = user.vertical ?? 'general'
+  if (user.role === 'admin' && v === 'general') return 'real_estate'
+  if (isSavedScrapeVertical(v)) return v
+  return 'general'
+}
+
 function Sidebar({
   activeTab,
   setActiveTab,
@@ -139,7 +163,11 @@ function Sidebar({
       )}
     >
       <div className={cn('border-b border-sidebar-border flex items-center gap-2', collapsed ? 'p-3 justify-center flex-col' : 'p-4 md:p-6')}>
-        <Link href="/" className={cn('flex items-center gap-3 min-w-0', collapsed && 'justify-center')} onClick={() => onMobileOpenChange(false)}>
+        <Link
+          href="/dashboard"
+          className={cn('flex items-center gap-3 min-w-0', collapsed && 'justify-center')}
+          onClick={() => onMobileOpenChange(false)}
+        >
           <img
             src={APP_LOGO}
             alt={`${APP_NAME} Logo`}
@@ -331,15 +359,70 @@ function StatCard({
 }
 
 export default function DashboardPage() {
-  const { user, logOut, loading: authLoading } = useAuth()
+  const { user, logOut, loading: authLoading, refreshUser } = useAuth()
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('overview')
 
   const { leads, loading: leadsLoading, stats: leadStats, updateStatus } = useLeads(user?.id ?? null)
   const { posts, loading: postsLoading, stats: postStats, cancelPost, fetchPosts } = usePosts(user?.id ?? null)
+  const [scrapeVertical, setScrapeVertical] = useState<string>('real_estate')
+  const scrapeBackfillFailedFor = useRef<string | null>(null)
+  const scrapeBackfillInFlight = useRef(false)
+
+  useEffect(() => {
+    if (!user) return
+    if (isSavedScrapeVertical(user.scrapeVertical)) {
+      setScrapeVertical(user.scrapeVertical)
+      return
+    }
+    setScrapeVertical(defaultScrapeVerticalForUser(user))
+  }, [user?.id, user?.vertical, user?.role, user?.scrapeVertical])
+
+  // משתמשים ישנים בלי scrapeVertical — כותבים ברירת מחדל ל-Firestore (נשמר לכל משתמש במסמך)
+  useEffect(() => {
+    if (!user) {
+      scrapeBackfillFailedFor.current = null
+      scrapeBackfillInFlight.current = false
+      return
+    }
+    if (isSavedScrapeVertical(user.scrapeVertical)) return
+    if (scrapeBackfillFailedFor.current === user.id) return
+    if (scrapeBackfillInFlight.current) return
+
+    scrapeBackfillInFlight.current = true
+    const next = defaultScrapeVerticalForUser(user)
+    void updateUser(user.id, { scrapeVertical: next })
+      .then(() => refreshUser())
+      .catch((e) => {
+        console.error(e)
+        scrapeBackfillFailedFor.current = user.id
+        toast.error('לא ניתן לשמור העדפת איסוף — נסה שוב או בדוק הרשאות')
+      })
+      .finally(() => {
+        scrapeBackfillInFlight.current = false
+      })
+  }, [user?.id, user?.vertical, user?.role, user?.scrapeVertical, refreshUser])
+
+  const persistScrapeVertical = useCallback(
+    async (next: string) => {
+      if (!user || !isSavedScrapeVertical(next)) return
+      setScrapeVertical(next)
+      try {
+        await updateUser(user.id, { scrapeVertical: next as LeadVertical })
+        await refreshUser()
+      } catch (e) {
+        console.error(e)
+        toast.error('שמירת קטגוריית האיסוף נכשלה')
+      }
+    },
+    [user, refreshUser]
+  )
+
+  const scrapeVertCfg = VERTICAL_CONFIG[scrapeVertical] ?? VERTICAL_CONFIG.general
+
   const { run: runScraper, running: scraperRunning, lastCount } = useScraper(
     user?.id ?? null,
-    user?.vertical ?? 'general'
+    scrapeVertical
   )
   const { groups, syncing, syncGroups, toggleGroup } = useFacebookGroups(user?.id ?? null)
 
@@ -422,9 +505,14 @@ export default function DashboardPage() {
 
   function connectFacebook() {
     if (!user) return
-    const ru = encodeURIComponent(`${window.location.origin}/api/facebook/callback`)
-    const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID ?? ''
-    window.location.href = `https://www.facebook.com/dialog/oauth?client_id=${appId}&redirect_uri=${ru}&scope=publish_to_groups,groups_access_member_info,email,public_profile&state=${user.id}&response_type=code`
+    if (!isValidFacebookAppId(getFacebookAppId())) {
+      toast.error(
+        'מזהה App ID לא תקין או חסר. ב-Meta for Developers → האפליקציה → Settings → Basic: העתק רק את "App ID" (מספר 13–18 ספרות, בלי מרכאות). ב-.env.local: NEXT_PUBLIC_FACEBOOK_APP_ID=המספר. לא להדביק App Secret. אחרי שינוי — הפעל מחדש את השרת או בנה מחדש בפרודקשן.'
+      )
+      return
+    }
+    const redirectUri = `${window.location.origin}/api/facebook/callback`
+    window.location.href = getFacebookAuthUrl(redirectUri, user.id)
   }
 
   async function handlePublish() {
@@ -654,10 +742,33 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between rounded-xl border border-dashed border-muted-foreground/25 bg-muted/20 p-4 mb-2">
+                <div className="space-y-2 min-w-[200px]">
+                  <Label htmlFor="overview-scrape-vertical" className="text-sm">
+                    קטגוריית איסוף לידים
+                  </Label>
+                  <Select value={scrapeVertical} onValueChange={(v) => void persistScrapeVertical(v)}>
+                    <SelectTrigger id="overview-scrape-vertical" className="w-full sm:w-[220px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SCRAPE_VERTICAL_KEYS.map((key) => (
+                        <SelectItem key={key} value={key}>
+                          {VERTICAL_CONFIG[key]?.emoji} {VERTICAL_CONFIG[key]?.label ?? key}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-xs text-muted-foreground max-w-md">
+                  נדל״ן, רכב או גיוס — מקור יד2 רלוונטי לקטגוריה; &quot;כללי&quot; מערבב נדל״ן ורכב. גיוס מסתמך בעיקר על RSS/טלגרם. כמנהל עם פרופיל &quot;כללי&quot;, ברירת המחדל כאן היא נדל״ן.
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card
                   className="border-0 shadow-md hover-lift cursor-pointer group"
-                  onClick={() => runScraper(vertCfg?.keywords ?? [])}
+                  onClick={() => runScraper(scrapeVertCfg?.keywords ?? [])}
                 >
                   <CardContent className="p-6 flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -715,7 +826,9 @@ export default function DashboardPage() {
               scraperRunning={scraperRunning}
               lastCount={lastCount}
               updateStatus={updateStatus}
-              onRunScraper={() => runScraper(vertCfg?.keywords ?? [])}
+              scrapeVertical={scrapeVertical}
+              onScrapeVerticalChange={persistScrapeVertical}
+              onRunScraper={() => runScraper(scrapeVertCfg?.keywords ?? [])}
             />
           )}
 
@@ -830,6 +943,8 @@ const LeadsPanel = memo(function LeadsPanel({
   scraperRunning,
   lastCount,
   updateStatus,
+  scrapeVertical,
+  onScrapeVerticalChange,
   onRunScraper,
 }: {
   userId: string
@@ -839,6 +954,8 @@ const LeadsPanel = memo(function LeadsPanel({
   scraperRunning: boolean
   lastCount: number | null
   updateStatus: (id: string, s: LeadStatus) => void
+  scrapeVertical: string
+  onScrapeVerticalChange: (v: string) => void
   onRunScraper: () => void
 }) {
   const [searchTerm, setSearchTerm] = useState('')
@@ -886,7 +1003,24 @@ const LeadsPanel = memo(function LeadsPanel({
             קיצור דרך: Alt+1–6 למעבר בין לשוניות
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:items-center">
+          <div className="space-y-1.5 min-w-[180px]">
+            <Label htmlFor="leads-scrape-vertical" className="text-xs text-muted-foreground">
+              קטגוריה לאיסוף
+            </Label>
+            <Select value={scrapeVertical} onValueChange={onScrapeVerticalChange}>
+              <SelectTrigger id="leads-scrape-vertical" className="w-full sm:w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SCRAPE_VERTICAL_KEYS.map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {VERTICAL_CONFIG[key]?.emoji} {VERTICAL_CONFIG[key]?.label ?? key}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button type="button" className="btn-shimmer flex-1 sm:flex-none" disabled={scraperRunning} onClick={onRunScraper}>
             <RefreshCw className={cn('w-4 h-4 ml-2', scraperRunning && 'animate-spin')} />
             {scraperRunning ? 'אוסף...' : 'אסוף לידים'}

@@ -23,7 +23,7 @@ service cloud.firestore {
     }
 
     function validUserWrite() {
-      let allowed = ['name', 'email', 'vertical', 'updatedAt'];
+      let allowed = ['name', 'email', 'vertical', 'scrapeVertical', 'updatedAt'];
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
     }
 

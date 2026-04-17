@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminAuth } from '@/lib/firebaseAdmin'
+import { decodeSessionCookieToken } from '@/lib/sessionCookieCodec'
 
 export type ApiAuthOk = { ok: true; uid: string }
 export type ApiAuthFail = { ok: false; response: NextResponse }
@@ -10,7 +11,7 @@ export type ApiAuthResult = ApiAuthOk | ApiAuthFail
  * Use on API routes after middleware, or when middleware is bypassed.
  */
 export async function verifyApiAuth(req: NextRequest): Promise<ApiAuthResult> {
-  const token = req.cookies.get('__session')?.value
+  const token = decodeSessionCookieToken(req.cookies.get('__session')?.value)
   if (!token) {
     return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }

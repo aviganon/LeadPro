@@ -51,6 +51,7 @@ import {
   ShieldCheck,
   Target,
   TrendingUp,
+  UserPlus,
   Users,
   XCircle,
   Zap,
@@ -63,7 +64,7 @@ export interface AdminUserRow {
   name: string
   email: string
   plan: 'free' | 'basic' | 'pro' | 'enterprise'
-  vertical: 'real_estate' | 'car' | 'general'
+  vertical: 'real_estate' | 'car' | 'general' | 'recruitment'
   role?: 'admin' | 'user'
   isActive: boolean
   facebookConnected: boolean
@@ -91,6 +92,7 @@ const VERTICAL_CONFIG_ADMIN: Record<string, { label: string; icon: React.Element
   real_estate: { label: 'נדל״ן', icon: Building2 },
   car: { label: 'רכב', icon: Car },
   general: { label: 'עסקים', icon: Briefcase },
+  recruitment: { label: 'גיוס והשמה', icon: UserPlus },
 }
 
 const PLANS_QUICK: { value: string; label: string }[] = [
@@ -104,6 +106,7 @@ const VERTICALS_QUICK: { value: string; label: string }[] = [
   { value: 'real_estate', label: 'נדל״ן' },
   { value: 'car', label: 'רכב' },
   { value: 'general', label: 'עסקים' },
+  { value: 'recruitment', label: 'גיוס והשמה' },
 ]
 
 function AdminUsersOverviewTab({

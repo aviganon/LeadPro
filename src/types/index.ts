@@ -2,7 +2,12 @@
 
 export type UserRole = 'admin' | 'user'
 export type UserPlan = 'free' | 'basic' | 'pro' | 'enterprise'
-export type LeadVertical = 'real_estate' | 'car' | 'general' | string
+export type LeadVertical =
+  | 'real_estate'
+  | 'car'
+  | 'general'
+  | 'recruitment'
+  | string
 
 export interface User {
   id: string
@@ -11,6 +16,8 @@ export interface User {
   role: UserRole
   plan: UserPlan
   vertical: LeadVertical
+  /** קטגוריית איסוף לידים (נדל״ן / רכב / כללי) — נשמר ב-Firestore */
+  scrapeVertical?: LeadVertical
   createdAt: Date
   updatedAt: Date
   facebookConnected: boolean
@@ -50,7 +57,7 @@ export interface UserFacebookGroups {
 
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'converted' | 'lost'
 export type LeadSource =
-  | 'yad2' | 'madlan' | 'facebook_group' | 'google_alerts'
+  | 'yad2' | 'madlan' | 'facebook_group' | 'google_alerts' | 'rss'
   | 'reddit' | 'quora' | 'telegram' | 'government_data'
   | 'autoscout' | 'manual' | 'other'
 

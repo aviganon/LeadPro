@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { getAdminAuth, getAdminFirestore } from '@/lib/firebaseAdmin'
+import { decodeSessionCookieToken } from '@/lib/sessionCookieCodec'
 
 export async function requireAdminSession(): Promise<
   { ok: true; adminUid: string } | { ok: false; response: NextResponse }
 > {
   const cookieStore = await cookies()
-  const session = cookieStore.get('__session')?.value
+  const session = decodeSessionCookieToken(cookieStore.get('__session')?.value)
   if (!session) {
     return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }

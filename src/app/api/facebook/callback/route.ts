@@ -8,6 +8,7 @@ import {
 } from '@/lib/facebook'
 import { getAdminAuth, getAdminFirestore } from '@/lib/firebaseAdmin'
 import { encryptToken } from '@/lib/crypto'
+import { decodeSessionCookieToken } from '@/lib/sessionCookieCodec'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard?fb_error=missing', req.url))
   }
 
-  const sessionCookie = req.cookies.get('__session')?.value
+  const sessionCookie = decodeSessionCookieToken(req.cookies.get('__session')?.value)
   if (!sessionCookie) {
     return NextResponse.redirect(new URL('/dashboard?fb_error=no_session', req.url))
   }

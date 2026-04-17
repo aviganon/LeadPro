@@ -9,7 +9,7 @@ const JWKS = createRemoteJWKSet(
 )
 
 export async function verifyFirebaseIdTokenEdge(idToken: string): Promise<{ uid: string }> {
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim()
   if (!projectId) throw new Error('NEXT_PUBLIC_FIREBASE_PROJECT_ID is not set')
 
   const issuer = `https://securetoken.google.com/${projectId}`

@@ -69,6 +69,39 @@ export const DEFAULT_TEMPLATES: Omit<PostTemplate, 'id' | 'createdAt'>[] = [
     variables: ['dealerName', 'phone', 'city'],
     isActive: true,
   },
+  // גיוס והשמה
+  {
+    userId: 'system',
+    vertical: 'recruitment',
+    name: 'גיוס - מעסיקים',
+    bodyTemplate: `💼 מגייסים עובדים ב{{city}}?
+
+אני {{agentName}}, מתמחה בגיוס והשמה בתחום שלכם.
+
+✅ איתור מועמדים רלוונטיים
+✅ סינון ראשוני וקורות חיים
+✅ ליווי עד קליטה
+
+📞 {{phone}}
+השאירו הודעה ואחזור בהקדם.`,
+    variables: ['city', 'agentName', 'phone'],
+    isActive: true,
+  },
+  {
+    userId: 'system',
+    vertical: 'recruitment',
+    name: 'גיוס - מחפשי עבודה',
+    bodyTemplate: `📋 מחפשים עבודה או חיפוש אחרי עובדים?
+
+{{agentName}} — ליווי מקצועי לעסקים ולמועמדים.
+
+💰 שקיפות בתהליך
+🤝 התאמה לתפקיד ולתרבות הארגון
+
+{{phone}} | {{city}}`,
+    variables: ['agentName', 'phone', 'city'],
+    isActive: true,
+  },
 ]
 
 // ========== RENDERER ==========
@@ -113,7 +146,14 @@ function buildLeadPrompt(
   vertical: LeadVertical,
   agentInfo: { name: string; phone: string; city?: string }
 ): string {
-  const verticalLabel = vertical === 'real_estate' ? 'נדל"ן' : vertical === 'car' ? 'רכב' : vertical
+  const verticalLabel =
+    vertical === 'real_estate'
+      ? 'נדל"ן'
+      : vertical === 'car'
+        ? 'רכב'
+        : vertical === 'recruitment'
+          ? 'גיוס והשמה'
+          : vertical
   return `כתוב פוסט קצר (עד 150 מילים) בעברית לפרסום בקבוצת פייסבוק בתחום ${verticalLabel}.
 המידע על הליד: ${lead.notes ?? 'לא זמין'}
 שם הסוכן: ${agentInfo.name}
@@ -126,6 +166,9 @@ function fallbackPost(vertical: LeadVertical, agentInfo: { name: string; phone: 
   if (vertical === 'real_estate') {
     return `🏠 שירותי נדל"ן מקצועיים\n\n${agentInfo.name} | 📞 ${agentInfo.phone}\n\nצרו קשר לפגישת ייעוץ ✅`
   }
+  if (vertical === 'recruitment') {
+    return `💼 גיוס והשמה מקצועיים\n\n${agentInfo.name} | 📞 ${agentInfo.phone}\n\nצרו קשר לגיוס ומיון מועמדים ✅`
+  }
   return `🚗 שירותי רכב מקצועיים\n\n${agentInfo.name} | 📞 ${agentInfo.phone}\n\nצרו קשר ✅`
 }
 
@@ -135,16 +178,45 @@ export const VERTICAL_CONFIG: Record<string, { label: string; keywords: string[]
   real_estate: {
     label: 'נדל"ן',
     emoji: '🏠',
-    keywords: ['דירה', 'בית', 'נדלן', 'השכרה', 'מכירה', 'מקרקעין'],
+    keywords: [
+      'דירה למכירה',
+      'דירה 4 חדרים',
+      'מגרש למכירה',
+      'וילה למכירה',
+      'פנטהאוז',
+      'נכס להשקעה',
+      'דירה חדשה מפרסם',
+    ],
   },
   car: {
     label: 'רכב',
     emoji: '🚗',
-    keywords: ['רכב', 'מכונית', 'טסטה', 'ביטוח רכב', 'יד שנייה'],
+    keywords: [
+      'מכירת רכב',
+      'רכב יד שנייה',
+      'טסטה',
+      'מכונית למכירה',
+      'סוכנות רכב',
+      'ג׳יפ',
+    ],
   },
   general: {
     label: 'כללי',
     emoji: '💼',
-    keywords: [],
+    keywords: ['דירה למכירה', 'רכב יד שנייה', 'נכס', 'מכונית'],
+  },
+  recruitment: {
+    label: 'גיוס והשמה',
+    emoji: '🧑‍💼',
+    keywords: [
+      'דרושים',
+      'משרה פנויה',
+      'גיוס עובדים',
+      'השמה',
+      'מחפשים עובדים',
+      'משרה מלאה',
+      'הייטק דרושים',
+      'משרה היברידית',
+    ],
   },
 }

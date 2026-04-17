@@ -29,7 +29,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   async function loadUser(fbUser: FirebaseUser) {
-    const u = await getUser(fbUser.uid)
+    let u = await getUser(fbUser.uid)
+    if (!u) {
+      // משתמש קיים ב-Firebase Auth בלי מסמך ב-Firestore (או סביבה מקומית / העברה) — יוצרים פרופיל ברירת מחדל
+      await createUser(fbUser.uid, {
+        email: fbUser.email ?? '',
+        name: fbUser.displayName ?? fbUser.email?.split('@')[0] ?? 'משתמש',
+        role: 'user',
+        plan: 'free',
+        vertical: 'general',
+        scrapeVertical: 'general',
+        facebookConnected: false,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      u = await getUser(fbUser.uid)
+    }
     setUser(u)
   }
 
@@ -78,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signUp(email: string, password: string, name: string, vertical: string) {
     const { user: fbUser } = await createUserWithEmailAndPassword(auth, email, password)
     const existing = await getUser(fbUser.uid)
+    // מסמך קיים (למשל admin שנוצר מממשק ניהול) — לא נדרס
     if (!existing) {
       await createUser(fbUser.uid, {
         email,
@@ -85,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: 'user',
         plan: 'free',
         vertical,
+        scrapeVertical: vertical,
         facebookConnected: false,
         isActive: true,
         createdAt: new Date(),

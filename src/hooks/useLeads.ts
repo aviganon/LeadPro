@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { toast } from 'sonner'
 import { subscribeToLeads, getPosts, updateLead, updatePost } from '@/lib/db'
 import type { Lead, Post, LeadStatus, PostStatus, FacebookGroup } from '@/types'
 
@@ -149,8 +150,19 @@ export function useScraper(userId: string | null, vertical: string) {
           credentials: 'include',
           body: JSON.stringify({ userId, vertical, keywords }),
         })
-        const data = await res.json()
-        setLastCount(data.count ?? 0)
+        const data = (await res.json()) as { count?: number; error?: string }
+        if (!res.ok) {
+          setLastCount(null)
+          toast.error(String(data.error ?? 'איסוף לידים נכשל'))
+          return
+        }
+        const n = data.count ?? 0
+        setLastCount(n)
+        if (n > 0) {
+          toast.success(`נוספו ${n} לידים`)
+        } else {
+          toast.info('הסריקה הושלמה — לא נמצאו לידים חדשים')
+        }
       } finally {
         busy.current = false
         setRunning(false)

@@ -24,6 +24,9 @@ export async function getUser(userId: string): Promise<User | null> {
   return { id: snap.id, ...snap.data() } as User
 }
 
+/**
+ * יוצר מסמך משתמש רק אם אינו קיים — לא דורס role/plan (למשל admin) בכניסה חוזרת או הרשמה.
+ */
 export async function createUser(userId: string, data: Omit<User, 'id'>): Promise<void> {
   const ref = doc(db, USERS, userId)
   const snap = await getDoc(ref)

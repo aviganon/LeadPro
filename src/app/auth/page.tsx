@@ -12,6 +12,7 @@ import {
   Mail,
   Lock,
   User,
+  UserPlus,
   Building2,
   Car,
   Briefcase,
@@ -32,6 +33,7 @@ type AuthMode = 'login' | 'signup' | 'reset'
 const VERTICALS = [
   { value: 'real_estate', label: 'נדל"ן', icon: Building2, color: 'bg-primary/10 text-primary border-primary/20' },
   { value: 'car', label: 'רכב', icon: Car, color: 'bg-accent/10 text-accent border-accent/20' },
+  { value: 'recruitment', label: 'גיוס והשמה', icon: UserPlus, color: 'bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20' },
   { value: 'general', label: 'עסקים', icon: Briefcase, color: 'bg-success/10 text-success border-success/20' },
 ]
 

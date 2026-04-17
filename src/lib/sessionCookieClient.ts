@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/firebase'
 import { getUser } from '@/lib/db'
+import { encodeSessionCookieToken } from '@/lib/sessionCookieCodec'
 
 /**
  * Writes __session / __role cookies from the current Firebase session.
@@ -17,7 +18,7 @@ export async function syncSessionCookies(): Promise<void> {
   }
 
   const token = await fbUser.getIdToken()
-  document.cookie = `__session=${token}; path=/; SameSite=Lax`
+  document.cookie = `__session=${encodeSessionCookieToken(token)}; path=/; SameSite=Lax`
 
   const user = await getUser(fbUser.uid)
   if (user) {

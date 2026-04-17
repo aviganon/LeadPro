@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyFirebaseIdTokenEdge } from '@/lib/verifyFirebaseIdTokenEdge'
+import { decodeSessionCookieToken } from '@/lib/sessionCookieCodec'
 
 const PUBLIC_PATHS = [
   '/auth',
@@ -10,23 +11,20 @@ const PUBLIC_PATHS = [
 ]
 
 /**
- * Protects routes using the Firebase ID token stored in the __session cookie (set by SessionSync).
- * Middleware runs on the Edge runtime: we verify the JWT with jose + Google's JWKS — the same
- * cryptographic validation firebase-admin uses for ID tokens. firebase-admin itself is Node-only.
+ * הגנה על מסלולים באמצעות JWT בעוגיית __session (Next.js 16: proxy במקום middleware).
  */
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
   const isApi = pathname.startsWith('/api/')
 
-  // Static assets from /public — must not require auth (landing page images, icons, etc.)
   if (!pathname.startsWith('/api') && /\.(ico|png|jpg|jpeg|svg|gif|webp)$/i.test(pathname)) {
     return NextResponse.next()
   }
 
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) return NextResponse.next()
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return NextResponse.next()
   if (pathname.startsWith('/_next') || pathname.startsWith('/favicon')) return NextResponse.next()
 
-  const session = req.cookies.get('__session')?.value
+  const session = decodeSessionCookieToken(req.cookies.get('__session')?.value)
   if (!session) {
     if (isApi) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

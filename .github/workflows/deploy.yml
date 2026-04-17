@@ -34,6 +34,7 @@ jobs:
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker --quiet
 
+      # Build args מטמיעים NEXT_PUBLIC_* בתוך ה-client bundle — חובה ש-Secrets ב-GitHub יהיו מלאים לפני deploy
       - name: Build Docker image
         run: |
           docker build \

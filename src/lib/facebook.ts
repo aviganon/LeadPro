@@ -4,11 +4,34 @@
 const FB_API_VERSION = 'v19.0'
 const FB_BASE = `https://graph.facebook.com/${FB_API_VERSION}`
 
+/** App ID from env (trimmed, בלי מרכאות). בדפדפן — רק NEXT_PUBLIC_* נטען בצד לקוח אחרי build. */
+export function getFacebookAppId(): string {
+  let raw = (process.env.NEXT_PUBLIC_FACEBOOK_APP_ID ?? '').trim()
+  if (
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    (raw.startsWith("'") && raw.endsWith("'"))
+  ) {
+    raw = raw.slice(1, -1).trim()
+  }
+  return raw
+}
+
+/**
+ * App ID מ-Settings → Basic ב-Meta for Developers — בדרך כלל 15–17 ספרות (מספר בלבד).
+ * לא להדביק כאן App Secret (מחרוזת ארוכה עם אותיות), ולא מזהה אפליקציה של אינסטגרם/מוצר אחר.
+ */
+export function isValidFacebookAppId(id: string): boolean {
+  if (!/^\d{13,18}$/.test(id)) return false
+  // סדרות כמו 000… או 111… — כמעט תמיד טעות
+  if (/^(\d)\1{12,}$/.test(id)) return false
+  return true
+}
+
 // ========== OAUTH ==========
 
 export function getFacebookAuthUrl(redirectUri: string, userId: string): string {
   const params = new URLSearchParams({
-    client_id: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID!,
+    client_id: getFacebookAppId(),
     redirect_uri: redirectUri,
     scope: [
       'publish_to_groups',
@@ -27,7 +50,7 @@ export async function exchangeCodeForToken(
   redirectUri: string
 ): Promise<{ accessToken: string; expiresIn: number }> {
   const params = new URLSearchParams({
-    client_id: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID!,
+    client_id: getFacebookAppId(),
     client_secret: process.env.FACEBOOK_APP_SECRET!,
     redirect_uri: redirectUri,
     code,
@@ -41,7 +64,7 @@ export async function exchangeCodeForToken(
 export async function getLongLivedToken(shortToken: string): Promise<{ accessToken: string; expiresIn: number }> {
   const params = new URLSearchParams({
     grant_type: 'fb_exchange_token',
-    client_id: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID!,
+    client_id: getFacebookAppId(),
     client_secret: process.env.FACEBOOK_APP_SECRET!,
     fb_exchange_token: shortToken,
   })
