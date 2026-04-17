@@ -7,6 +7,12 @@ export type LeadVertical =
   | 'car'
   | 'general'
   | 'recruitment'
+  | 'solar_energy'
+  | 'insurance'
+  | 'mortgage'
+  | 'legal'
+  | 'accounting'
+  | 'renovation'
   | string
 
 export interface User {

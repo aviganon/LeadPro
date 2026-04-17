@@ -58,6 +58,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { AdminConsole } from '@/components/admin/AdminConsole'
+import { LeadsKanban } from '@/components/LeadsKanban'
+import { LayoutList, LayoutGrid, FileText, FileSpreadsheet } from 'lucide-react'
 
 function FBIcon({ size = 16, className }: { size?: number; className?: string }) {
   return (
@@ -107,6 +109,15 @@ const SCRAPE_VERTICAL_KEYS = ['real_estate', 'car', 'general', 'recruitment'] as
 
 function isSavedScrapeVertical(v: unknown): v is (typeof SCRAPE_VERTICAL_KEYS)[number] {
   return typeof v === 'string' && (SCRAPE_VERTICAL_KEYS as readonly string[]).includes(v)
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 /** ברירת מחדל לאיסוף — זהה ללוגיקת ה-UI (כולל אדמין+כללי → נדל״ן) */
@@ -960,7 +971,26 @@ const LeadsPanel = memo(function LeadsPanel({
 }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all')
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>(() => {
+    if (typeof window === 'undefined') return 'list'
+    try {
+      const saved = window.localStorage.getItem('apexleads-leads-view')
+      return saved === 'kanban' ? 'kanban' : 'list'
+    } catch {
+      return 'list'
+    }
+  })
+  const [exportMenuOpen, setExportMenuOpen] = useState(false)
   const debouncedSearch = useDebouncedValue(searchTerm, LEADS_SEARCH_DEBOUNCE_MS)
+
+  const persistViewMode = useCallback((next: 'list' | 'kanban') => {
+    setViewMode(next)
+    try {
+      localStorage.setItem('apexleads-leads-view', next)
+    } catch {
+      /* ignore */
+    }
+  }, [])
 
   const filtered = leads.filter((lead) => {
     const okSearch = lead.notes.toLowerCase().includes(debouncedSearch.toLowerCase())
@@ -968,9 +998,9 @@ const LeadsPanel = memo(function LeadsPanel({
     return okSearch && okStatus
   })
 
-  async function exportCsv() {
+  async function downloadExport(format: 'csv' | 'xlsx') {
     try {
-      const res = await fetch('/api/leads/export', { credentials: 'include' })
+      const res = await fetch(`/api/leads/export?format=${format}`, { credentials: 'include' })
       if (!res.ok) {
         toast.error('ייצוא נכשל')
         return
@@ -979,15 +1009,69 @@ const LeadsPanel = memo(function LeadsPanel({
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `leads-${userId.slice(0, 8)}.csv`
+      a.download = `leads-${userId.slice(0, 8)}.${format}`
       a.rel = 'noopener'
       document.body.appendChild(a)
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
-      toast.success('קובץ CSV הורד')
+      toast.success(`קובץ ${format.toUpperCase()} הורד`)
     } catch {
       toast.error('ייצוא נכשל')
+    }
+  }
+
+  function exportPdf() {
+    try {
+      const items = filtered.length > 0 ? filtered : leads
+      const rows = items
+        .map((l) => {
+          const status = STATUS_LABEL[l.status] ?? l.status
+          return `<tr>
+            <td>${l.qualityScore}</td>
+            <td>${escapeHtml(l.notes)}</td>
+            <td>${escapeHtml(l.source)}</td>
+            <td>${escapeHtml(l.vertical)}</td>
+            <td>${status}</td>
+            <td>${new Date(l.createdAt).toLocaleDateString('he-IL')}</td>
+          </tr>`
+        })
+        .join('')
+      const html = `<!doctype html>
+<html dir="rtl" lang="he"><head><meta charset="utf-8"/>
+<title>ApexLeads - ייצוא לידים</title>
+<style>
+  body{font-family:-apple-system,Segoe UI,Arial,sans-serif;margin:24px;color:#111}
+  h1{margin:0 0 4px;font-size:22px}
+  .sub{color:#666;font-size:12px;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{border:1px solid #ddd;padding:6px 8px;text-align:right;vertical-align:top}
+  thead th{background:#f3f4f6}
+  tr:nth-child(even) td{background:#fafafa}
+  @media print{.noprint{display:none}}
+  .btn{background:#111;color:#fff;border:0;padding:8px 14px;border-radius:8px;cursor:pointer}
+</style></head>
+<body>
+  <h1>ApexLeads — דוח לידים</h1>
+  <div class="sub">נוצר: ${new Date().toLocaleString('he-IL')} · סה"כ: ${items.length}</div>
+  <button class="btn noprint" onclick="window.print()">הדפס / שמור PDF</button>
+  <table>
+    <thead><tr><th>ציון</th><th>הערות</th><th>מקור</th><th>ורטיקל</th><th>סטטוס</th><th>תאריך</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <script>setTimeout(()=>window.print(),400)</script>
+</body></html>`
+      const w = window.open('', '_blank', 'noopener,noreferrer,width=980,height=720')
+      if (!w) {
+        toast.error('חלון ההדפסה נחסם — אפשר חלונות קופצים ונסה שוב')
+        return
+      }
+      w.document.open()
+      w.document.write(html)
+      w.document.close()
+      toast.success('נפתח חלון הדפסה/PDF')
+    } catch {
+      toast.error('ייצוא PDF נכשל')
     }
   }
 
@@ -1025,10 +1109,56 @@ const LeadsPanel = memo(function LeadsPanel({
             <RefreshCw className={cn('w-4 h-4 ml-2', scraperRunning && 'animate-spin')} />
             {scraperRunning ? 'אוסף...' : 'אסוף לידים'}
           </Button>
-          <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={() => void exportCsv()}>
-            <Download className="w-4 h-4 ml-2" aria-hidden />
-            ייצוא CSV
-          </Button>
+          <div className="relative">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => setExportMenuOpen((p) => !p)}
+              onBlur={() => setTimeout(() => setExportMenuOpen(false), 120)}
+            >
+              <Download className="w-4 h-4 ml-2" aria-hidden />
+              ייצוא
+              <ChevronDown className="w-4 h-4 mr-1" />
+            </Button>
+            {exportMenuOpen && (
+              <div className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg p-1">
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted text-right"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    setExportMenuOpen(false)
+                    void downloadExport('csv')
+                  }}
+                >
+                  <FileText className="w-4 h-4" /> CSV
+                </button>
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted text-right"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    setExportMenuOpen(false)
+                    void downloadExport('xlsx')
+                  }}
+                >
+                  <FileSpreadsheet className="w-4 h-4" /> Excel
+                </button>
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted text-right"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    setExportMenuOpen(false)
+                    exportPdf()
+                  }}
+                >
+                  <FileText className="w-4 h-4" /> PDF / הדפסה
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       {lastCount !== null && (
@@ -1045,31 +1175,59 @@ const LeadsPanel = memo(function LeadsPanel({
             className="pr-10"
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-1 self-start">
           <button
             type="button"
-            onClick={() => setStatusFilter('all')}
+            onClick={() => persistViewMode('list')}
+            aria-pressed={viewMode === 'list'}
             className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium transition-all',
-              statusFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-all',
+              viewMode === 'list' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            הכל
+            <LayoutList className="w-4 h-4" />
+            רשימה
           </button>
-          {(Object.keys(LEAD_STATUS_STYLE) as LeadStatus[]).map((st) => (
+          <button
+            type="button"
+            onClick={() => persistViewMode('kanban')}
+            aria-pressed={viewMode === 'kanban'}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-all',
+              viewMode === 'kanban' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            קנבן
+          </button>
+        </div>
+        {viewMode === 'list' && (
+          <div className="flex gap-2 flex-wrap">
             <button
-              key={st}
               type="button"
-              onClick={() => setStatusFilter(st)}
+              onClick={() => setStatusFilter('all')}
               className={cn(
                 'px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                statusFilter === st ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+                statusFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
               )}
             >
-              {LEAD_STATUS_STYLE[st].label}
+              הכל
             </button>
-          ))}
-        </div>
+            {(Object.keys(LEAD_STATUS_STYLE) as LeadStatus[]).map((st) => (
+              <button
+                key={st}
+                type="button"
+                onClick={() => setStatusFilter(st)}
+                className={cn(
+                  'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                  statusFilter === st ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+                )}
+              >
+                {LEAD_STATUS_STYLE[st].label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {leadsLoading ? (
@@ -1089,6 +1247,11 @@ const LeadsPanel = memo(function LeadsPanel({
             />
           </CardContent>
         </Card>
+      ) : viewMode === 'kanban' ? (
+        <LeadsKanban
+          leads={leads.filter((l) => l.notes.toLowerCase().includes(debouncedSearch.toLowerCase()))}
+          onStatusChange={updateStatus}
+        />
       ) : filtered.length === 0 ? (
         <p className="text-center text-muted-foreground py-12">אין תוצאות לחיפוש או לסינון הנוכחי</p>
       ) : (
