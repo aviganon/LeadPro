@@ -4,7 +4,10 @@ import { getAdminFirestore } from '@/lib/firebaseAdmin'
 import { requireAdminSession } from '@/lib/adminAuth'
 
 const PLANS = ['free', 'basic', 'pro', 'enterprise'] as const
-const VERTICALS = ['real_estate', 'car', 'general', 'recruitment'] as const
+const VERTICALS = [
+  'real_estate', 'car', 'general', 'recruitment',
+  'solar_energy', 'insurance', 'mortgage', 'legal', 'accounting', 'renovation',
+] as const
 const ROLES = ['admin', 'user'] as const
 
 export async function PATCH(

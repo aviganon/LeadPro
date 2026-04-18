@@ -383,6 +383,10 @@ export async function runLeadScraper(
       raw.push(...(await scrapeYad2Cars(kw)))
     }
     raw.push(...(await fetchRedditIsraelSearch(effectiveKeywords, vertical)))
+  } else {
+    // ורטיקלים נוספים (solar_energy, insurance, mortgage, legal, accounting, renovation וכד׳)
+    // אין scraper ייעודי — חיפוש Reddit לפי מילות מפתח של הורטיקל
+    raw.push(...(await fetchRedditIsraelSearch(effectiveKeywords, vertical)))
   }
 
   const rssLeads = await fetchRssFeedLeads(effectiveKeywords, vertical)

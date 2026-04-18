@@ -105,7 +105,10 @@ const tabTitles: Record<Tab, string> = {
   settings: 'הגדרות',
 }
 
-const SCRAPE_VERTICAL_KEYS = ['real_estate', 'car', 'general', 'recruitment'] as const
+const SCRAPE_VERTICAL_KEYS = [
+  'real_estate', 'car', 'general', 'recruitment',
+  'solar_energy', 'insurance', 'mortgage', 'legal', 'accounting', 'renovation',
+] as const
 
 function isSavedScrapeVertical(v: unknown): v is (typeof SCRAPE_VERTICAL_KEYS)[number] {
   return typeof v === 'string' && (SCRAPE_VERTICAL_KEYS as readonly string[]).includes(v)

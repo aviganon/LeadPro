@@ -64,7 +64,11 @@ export interface AdminUserRow {
   name: string
   email: string
   plan: 'free' | 'basic' | 'pro' | 'enterprise'
-  vertical: 'real_estate' | 'car' | 'general' | 'recruitment'
+  vertical:
+    | 'real_estate' | 'car' | 'general' | 'recruitment'
+    | 'solar_energy' | 'insurance' | 'mortgage'
+    | 'legal' | 'accounting' | 'renovation'
+    | string
   role?: 'admin' | 'user'
   isActive: boolean
   facebookConnected: boolean
@@ -93,6 +97,12 @@ const VERTICAL_CONFIG_ADMIN: Record<string, { label: string; icon: React.Element
   car: { label: 'רכב', icon: Car },
   general: { label: 'עסקים', icon: Briefcase },
   recruitment: { label: 'גיוס והשמה', icon: UserPlus },
+  solar_energy: { label: 'אנרגיה סולארית', icon: Zap },
+  insurance: { label: 'ביטוח', icon: Shield },
+  mortgage: { label: 'משכנתאות', icon: Building2 },
+  legal: { label: 'משפטי', icon: Target },
+  accounting: { label: 'הנהלת חשבונות', icon: BarChart3 },
+  renovation: { label: 'שיפוצים', icon: Activity },
 }
 
 const PLANS_QUICK: { value: string; label: string }[] = [
@@ -107,6 +117,12 @@ const VERTICALS_QUICK: { value: string; label: string }[] = [
   { value: 'car', label: 'רכב' },
   { value: 'general', label: 'עסקים' },
   { value: 'recruitment', label: 'גיוס והשמה' },
+  { value: 'solar_energy', label: 'אנרגיה סולארית' },
+  { value: 'insurance', label: 'ביטוח' },
+  { value: 'mortgage', label: 'משכנתאות' },
+  { value: 'legal', label: 'משפטי' },
+  { value: 'accounting', label: 'הנהלת חשבונות' },
+  { value: 'renovation', label: 'שיפוצים' },
 ]
 
 function AdminUsersOverviewTab({
