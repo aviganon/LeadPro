@@ -67,7 +67,7 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --timeout 60 \
-            --set-env-vars "NODE_ENV=production" \
+            --set-env-vars "^|^NODE_ENV=production|NEXTAUTH_URL=https://apexleads.vip|LEAD_RSS_FEED_URLS=${{ vars.LEAD_RSS_FEED_URLS }}" \
             --set-secrets "\
               FACEBOOK_APP_SECRET=FACEBOOK_APP_SECRET:latest,\
               NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,\
