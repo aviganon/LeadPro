@@ -33,11 +33,11 @@ export function getFacebookAuthUrl(redirectUri: string, userId: string): string 
   const params = new URLSearchParams({
     client_id: getFacebookAppId(),
     redirect_uri: redirectUri,
+    // publish_to_groups + groups_access_member_info דורשים App Review מ-Meta.
+    // יוחזרו לאחר אישור. כרגע: basic scopes בלבד לאימות זהות.
     scope: [
-      'publish_to_groups',
-      'groups_access_member_info',
-      'email',
       'public_profile',
+      'email',
     ].join(','),
     state: userId,          // passed back after auth, used to link to our user
     response_type: 'code',

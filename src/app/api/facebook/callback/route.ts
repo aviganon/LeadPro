@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
       accessToken: encrypted,
       tokenEncrypted: true,
       tokenExpiry,
-      scopes: ['publish_to_groups', 'groups_access_member_info'],
+      scopes: ['public_profile', 'email'],
       createdAt: FieldValue.serverTimestamp(),
     })
 
