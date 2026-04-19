@@ -49,15 +49,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u)
   }
 
+  // Failsafe: if Firebase takes >8s to resolve (e.g. offline / Firestore slow), unblock the UI
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 8000)
+    return () => clearTimeout(t)
+  }, [])
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async fbUser => {
       setFirebaseUser(fbUser)
-      if (fbUser) {
-        await loadUser(fbUser)
-      } else {
+      try {
+        if (fbUser) {
+          await loadUser(fbUser)
+        } else {
+          setUser(null)
+        }
+      } catch (e) {
+        console.error('AuthContext: loadUser error', e)
         setUser(null)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     })
     return unsub
   }, [])

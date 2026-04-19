@@ -92,10 +92,13 @@ function AuthPageContent() {
       if (mode === 'login') {
         await signIn(email, password)
         await syncSessionCookies()
+        // Give the browser a tick to commit the cookie before navigation (fixes Safari + Chrome race)
+        await new Promise(r => setTimeout(r, 150))
         router.replace(redirectTo)
       } else if (mode === 'signup') {
         await signUp(email, password, name, vertical)
         await syncSessionCookies()
+        await new Promise(r => setTimeout(r, 150))
         router.replace(redirectTo)
       } else {
         await resetPassword(email)
