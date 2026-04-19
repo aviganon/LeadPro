@@ -8,7 +8,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: me-west1
-  SERVICE_NAME: leadpr
+  SERVICE_NAME: leadpro
   IMAGE: gcr.io/${{ secrets.GCP_PROJECT_ID }}/leadpro
 
 jobs:
