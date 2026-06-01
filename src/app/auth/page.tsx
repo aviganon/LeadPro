@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import type { FormEvent } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -92,14 +92,13 @@ function AuthPageContent() {
       if (mode === 'login') {
         await signIn(email, password)
         await syncSessionCookies()
-        // Give the browser a tick to commit the cookie before navigation (fixes Safari + Chrome race)
-        await new Promise(r => setTimeout(r, 150))
-        router.replace(redirectTo)
+        window.location.assign(redirectTo)
+        return
       } else if (mode === 'signup') {
         await signUp(email, password, name, vertical)
         await syncSessionCookies()
-        await new Promise(r => setTimeout(r, 150))
-        router.replace(redirectTo)
+        window.location.assign(redirectTo)
+        return
       } else {
         await resetPassword(email)
         setResetSent(true)

@@ -126,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logOut() {
     await signOut(auth)
+    await fetch('/api/auth/session', { method: 'DELETE' })
     setUser(null)
   }
 

@@ -34,11 +34,8 @@ export function getFacebookAuthUrl(redirectUri: string, userId: string): string 
     client_id: getFacebookAppId(),
     redirect_uri: redirectUri,
     // publish_to_groups + groups_access_member_info דורשים App Review מ-Meta.
-    // יוחזרו לאחר אישור. כרגע: basic scopes בלבד לאימות זהות.
-    scope: [
-      'public_profile',
-      'email',
-    ].join(','),
+    // email אינו זמין לכל סוגי אפליקציות — רק public_profile לזיהוי בסיסי.
+    scope: 'public_profile',
     state: userId,          // passed back after auth, used to link to our user
     response_type: 'code',
   })
@@ -77,7 +74,7 @@ export async function getLongLivedToken(shortToken: string): Promise<{ accessTok
 // ========== USER INFO ==========
 
 export async function getFacebookUserInfo(accessToken: string): Promise<{ id: string; name: string; email?: string }> {
-  const res = await fetch(`${FB_BASE}/me?fields=id,name,email&access_token=${accessToken}`)
+  const res = await fetch(`${FB_BASE}/me?fields=id,name&access_token=${accessToken}`)
   const data = await res.json()
   if (data.error) throw new Error(data.error.message)
   return data

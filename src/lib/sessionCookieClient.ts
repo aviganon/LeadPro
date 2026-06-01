@@ -1,34 +1,25 @@
 'use client'
 
 import { auth } from '@/lib/firebase'
-import { getUser } from '@/lib/db'
-import { encodeSessionCookieToken } from '@/lib/sessionCookieCodec'
 
 /**
- * Writes __session / __role cookies from the current Firebase session.
- * Call this after signIn / signUp and before client navigation so middleware
- * sees a valid JWT on the next request (SessionSync alone can lag one tick).
+ * Writes __session / __role cookies via the server so they are committed
+ * before navigation (avoids first-login redirect loop with client-side router).
  */
-function cookieOpts(maxAge?: number): string {
-  const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : ''
-  const age = maxAge !== undefined ? `; max-age=${maxAge}` : '; max-age=3600'
-  return `; path=/${age}; SameSite=Lax${secure}`
-}
-
 export async function syncSessionCookies(): Promise<void> {
   const fbUser = auth.currentUser
   if (!fbUser) {
-    document.cookie = `__session=; path=/; max-age=0; SameSite=Lax`
-    document.cookie = `__role=; path=/; max-age=0; SameSite=Lax`
+    await fetch('/api/auth/session', { method: 'DELETE' })
     return
   }
 
   const token = await fbUser.getIdToken()
-  // Firebase ID tokens expire after 1 hour — set matching max-age so the cookie doesn't outlast the token
-  document.cookie = `__session=${encodeSessionCookieToken(token)}${cookieOpts(3600)}`
-
-  const user = await getUser(fbUser.uid)
-  if (user) {
-    document.cookie = `__role=${user.role}${cookieOpts(3600)}`
+  const res = await fetch('/api/auth/session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
+  if (!res.ok) {
+    throw new Error('Failed to sync session cookies')
   }
 }

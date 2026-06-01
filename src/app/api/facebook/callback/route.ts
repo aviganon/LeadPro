@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
       accessToken: encrypted,
       tokenEncrypted: true,
       tokenExpiry,
-      scopes: ['public_profile', 'email'],
+      scopes: ['public_profile'],
       createdAt: FieldValue.serverTimestamp(),
     })
 

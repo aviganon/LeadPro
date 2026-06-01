@@ -6,6 +6,7 @@ const PUBLIC_PATHS = [
   '/auth',
   '/pricing',
   '/manifest.json',
+  '/api/auth/session',
   '/api/billing/webhook',
   '/api/facebook/callback',
   '/api/leads/cron',  // Cloud Scheduler — auth handled inside the route
