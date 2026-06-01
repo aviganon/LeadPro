@@ -51,7 +51,7 @@ export default function PrivacyPage() {
               <strong> בצורה מוצפנת (AES-GCM 256-bit)</strong> לצורך סנכרון קבוצות ופרסום פוסטים מטעמך.
             </li>
             <li>לידים — נתונים ציבוריים בלבד שנאספים באמצעות Scrapers (Reddit, יד2 וכדומה) או מוזנים ידנית.</li>
-            <li>מטריקות שימוש — Vercel Analytics ללא זיהוי אישי.</li>
+            <li>מטריקות שימוש — Google Cloud Monitoring (ללא זיהוי אישי).</li>
           </ul>
         </Section>
 
@@ -85,7 +85,7 @@ export default function PrivacyPage() {
               <strong>Stripe</strong> — עיבוד תשלומים. אנחנו לא שומרים פרטי כרטיס אשראי — הם עוברים ישירות ל-Stripe.
             </li>
             <li>
-              <strong>Vercel / Google Cloud Run</strong> — תשתית אירוח ומחשוב.
+              <strong>Google Cloud Run</strong> — תשתית אירוח ומחשוב.
             </li>
           </ul>
         </Section>
