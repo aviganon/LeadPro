@@ -63,7 +63,6 @@ function friendlyError(code: string): string {
 
 function AuthPageContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const { signIn, signUp, resetPassword } = useAuth()
   const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login'
 
