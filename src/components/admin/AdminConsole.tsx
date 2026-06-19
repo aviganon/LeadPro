@@ -22,6 +22,7 @@ import {
   getSubjects, getInstitutions, getDepartments, getDepartmentCourses,
   getGames, getQuestions, getMaterials,
 } from '@/lib/db'
+import { OnlinePanel } from '@/components/admin/OnlinePanel'
 import { LEVELS } from '@/lib/constants'
 import { SHENKAR_BINYAN_COURSES } from '@/lib/shenkarCourses'
 import { CONTENT_PACKS } from '@/lib/contentPacks'
@@ -206,6 +207,8 @@ export function AdminConsole() {
           </Card>
         ))}
       </div>
+
+      <OnlinePanel />
 
       <AiCostPanel aggregate={aggregate} />
 
