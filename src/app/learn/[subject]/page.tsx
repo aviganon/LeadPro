@@ -67,7 +67,7 @@ export default function SubjectHub() {
       const res = await fetch('/api/ai/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject: subject?.slug, grade, count: 5, lang: locale }),
+        body: JSON.stringify({ subject: subject?.slug, subjectName: subjName, grade, level: subject?.level, count: 5, lang: locale }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -195,7 +195,7 @@ export default function SubjectHub() {
                     <div className="whitespace-pre-wrap leading-relaxed text-foreground/90" dir="auto">{m.bodyMarkdown}</div>
                   </div>
                 ))}
-                <AiTutor subject={subject.slug} grade={grade} />
+                <AiTutor subject={subject.slug} subjectName={subjName} grade={grade} level={subject.level} />
               </TabsContent>
             </Tabs>
           </>

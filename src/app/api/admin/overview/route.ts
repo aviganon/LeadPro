@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { Timestamp } from 'firebase-admin/firestore'
+import { Timestamp, AggregateField } from 'firebase-admin/firestore'
 import { getAdminFirestore } from '@/lib/firebaseAdmin'
 import { requireAdminSession } from '@/lib/adminAuth'
 
@@ -27,12 +27,23 @@ export async function GET() {
       }
     })
 
-    const [subjectsAgg, questionsAgg, gamesAgg, materialsAgg] = await Promise.all([
+    // עלות AI — סכימה כוללת + פירוט לפי סוג, באמצעות aggregation של Firestore
+    const aiAgg = db.collection('ai_usage').aggregate({
+      cost: AggregateField.sum('costUsd'),
+      inTok: AggregateField.sum('inputTokens'),
+      outTok: AggregateField.sum('outputTokens'),
+      calls: AggregateField.count(),
+    }).get()
+
+    const [subjectsAgg, questionsAgg, gamesAgg, materialsAgg, aiResult] = await Promise.all([
       db.collection('subjects').count().get(),
       db.collection('questions').count().get(),
       db.collection('games').count().get(),
       db.collection('materials').count().get(),
+      aiAgg,
     ])
+
+    const ai = aiResult.data()
 
     return NextResponse.json({
       users,
@@ -42,6 +53,10 @@ export async function GET() {
         totalQuestions: questionsAgg.data().count,
         totalGames: gamesAgg.data().count,
         totalMaterials: materialsAgg.data().count,
+        aiCalls: ai.calls ?? 0,
+        aiCostUsd: ai.cost ?? 0,
+        aiInputTokens: ai.inTok ?? 0,
+        aiOutputTokens: ai.outTok ?? 0,
       },
     })
   } catch (e) {

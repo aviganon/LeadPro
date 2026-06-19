@@ -43,7 +43,17 @@ interface AdminAggregate {
   totalQuestions: number
   totalGames: number
   totalMaterials: number
+  aiCalls: number
+  aiCostUsd: number
+  aiInputTokens: number
+  aiOutputTokens: number
 }
+
+// תמחור Claude Haiku 4.5 — דולר ל-1M טוקנים
+const PRICE_IN = 1.0
+const PRICE_OUT = 5.0
+const USD_TO_ILS = 3.7  // הערכה לתצוגה בלבד
+const fmtUsd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`
 
 const PLAN_LABELS: Record<string, string> = {
   free: 'חינם', basic: 'Basic', pro: 'Pro', enterprise: 'Enterprise',
@@ -181,6 +191,8 @@ export function AdminConsole() {
         ))}
       </div>
 
+      <AiCostPanel aggregate={aggregate} />
+
       <Tabs defaultValue="content">
         <TabsList>
           <TabsTrigger value="content">מבנה ותוכן</TabsTrigger>
@@ -236,6 +248,63 @@ export function AdminConsole() {
           )}
         </TabsContent>
       </Tabs>
+    </div>
+  )
+}
+
+// =================== AI COST PANEL ===================
+
+function AiCostPanel({ aggregate }: { aggregate: AdminAggregate | null }) {
+  const calls = aggregate?.aiCalls ?? 0
+  const cost = aggregate?.aiCostUsd ?? 0
+  const avg = calls > 0 ? cost / calls : 0
+
+  // הערכת עלות לקריאה בודדת (לפי שימוש טיפוסי), לפני שיש נתונים אמיתיים
+  const estHelp = (300 / 1e6) * PRICE_IN + (500 / 1e6) * PRICE_OUT      // ~$0.0028
+  const estQuestions = (250 / 1e6) * PRICE_IN + (1200 / 1e6) * PRICE_OUT // ~$0.0063
+
+  const agorot = (usd: number) => `~${Math.round(usd * USD_TO_ILS * 100)} אג׳`
+
+  return (
+    <Card className="border-fun/30">
+      <CardContent className="p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="w-10 h-10 rounded-2xl bg-fun/10 text-fun flex items-center justify-center">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-bold font-display">עלויות AI (Claude Haiku 4.5)</h3>
+            <p className="text-xs text-muted-foreground">תמחור: ${PRICE_IN}/1M טוקני קלט · ${PRICE_OUT}/1M טוקני פלט</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Metric label="עלות כוללת עד כה" value={fmtUsd(cost)} sub={`≈ ${(cost * USD_TO_ILS).toFixed(2)} ₪`} />
+          <Metric label="מספר קריאות" value={calls.toLocaleString('he-IL')} />
+          <Metric label="עלות ממוצעת לקריאה" value={calls ? fmtUsd(avg) : '—'} sub={calls ? agorot(avg) : 'אין נתונים עדיין'} />
+          <Metric label="טוקנים (קלט/פלט)" value={`${(aggregate?.aiInputTokens ?? 0).toLocaleString('he-IL')} / ${(aggregate?.aiOutputTokens ?? 0).toLocaleString('he-IL')}`} small />
+        </div>
+
+        <div className="rounded-2xl bg-muted/60 p-4 text-sm space-y-1.5">
+          <div className="font-medium mb-1">כמה כל קריאה עולה (הערכה):</div>
+          <div className="flex justify-between"><span>🧑‍🏫 מורה פרטי (הסבר)</span><span className="font-semibold">{fmtUsd(estHelp)} ({agorot(estHelp)})</span></div>
+          <div className="flex justify-between"><span>✨ יצירת 5 שאלות</span><span className="font-semibold">{fmtUsd(estQuestions)} ({agorot(estQuestions)})</span></div>
+          <p className="text-xs text-muted-foreground pt-2">
+            כלומר ~300–600 קריאות בדולר אחד. גם 1,000 סטודנטים שעושים 10 קריאות כל אחד ≈ {fmtUsd((estHelp + estQuestions) / 2 * 10000)} בלבד.
+            בנוסף יש הגבלת קצב לפי IP, והתוכן המוכן (שאלות/משחקים) לא צורך AI כלל.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function Metric({ label, value, sub, small }: { label: string; value: string; sub?: string; small?: boolean }) {
+  return (
+    <div className="rounded-2xl bg-background border border-border p-3">
+      <div className={`font-bold ${small ? 'text-sm' : 'text-xl'}`}>{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      {sub && <div className="text-xs text-muted-foreground/80 mt-0.5">{sub}</div>}
     </div>
   )
 }

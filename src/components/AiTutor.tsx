@@ -5,7 +5,9 @@ import { Sparkles, Send, Loader2 } from 'lucide-react'
 import { useLocale } from '@/context/LocaleContext'
 import { Button } from '@/components/ui/button'
 
-export function AiTutor({ subject, grade }: { subject: string; grade?: number }) {
+export function AiTutor({
+  subject, subjectName, grade, level,
+}: { subject: string; subjectName?: string; grade?: number; level?: string }) {
   const { t, locale } = useLocale()
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
@@ -21,7 +23,7 @@ export function AiTutor({ subject, grade }: { subject: string; grade?: number })
       const res = await fetch('/api/ai/help', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, subject, grade, lang: locale }),
+        body: JSON.stringify({ question, subject, subjectName, grade, level, lang: locale }),
       })
       const data = await res.json()
       if (!res.ok) {
