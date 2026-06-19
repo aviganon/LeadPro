@@ -15,7 +15,7 @@ interface AuthContextValue {
   user: User | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, name: string, vertical: string) => Promise<void>
+  signUp: (email: string, password: string, name: string) => Promise<void>
   logOut: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   refreshUser: () => Promise<void>
@@ -37,9 +37,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: fbUser.displayName ?? fbUser.email?.split('@')[0] ?? 'משתמש',
         role: 'user',
         plan: 'free',
-        vertical: 'general',
-        scrapeVertical: 'general',
-        facebookConnected: false,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -103,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithEmailAndPassword(auth, email, password)
   }
 
-  async function signUp(email: string, password: string, name: string, vertical: string) {
+  async function signUp(email: string, password: string, name: string) {
     const { user: fbUser } = await createUserWithEmailAndPassword(auth, email, password)
     const existing = await getUser(fbUser.uid)
     // מסמך קיים (למשל admin שנוצר מממשק ניהול) — לא נדרס
@@ -113,9 +110,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name,
         role: 'user',
         plan: 'free',
-        vertical,
-        scrapeVertical: vertical,
-        facebookConnected: false,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),

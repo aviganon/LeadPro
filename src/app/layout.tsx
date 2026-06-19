@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist, Geist_Mono, Fredoka } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/context/AuthContext'
+import { LocaleProvider } from '@/context/LocaleContext'
 import { SessionSync } from '@/components/SessionSync'
+import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants'
 
 const geistSans = Geist({
   subsets: ['latin'],
@@ -15,30 +17,23 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
 })
 
+// פונט "כיפי" עגול לכותרות — נותן את התחושה העתידנית/משחקית
+const fredoka = Fredoka({
+  subsets: ['latin', 'hebrew'],
+  variable: '--font-display',
+})
+
 export const metadata: Metadata = {
-  title: 'ApexLeads - ניהול לידים ופרסום חכם',
-  description:
-    'פלטפורמת SaaS מתקדמת לאיסוף לידים ופרסום אוטומטי בקבוצות פייסבוק. הגדל את המכירות שלך עם AI.',
-  generator: 'ApexLeads',
-  keywords: ['לידים', 'פרסום', 'פייסבוק', 'נדלן', 'רכב', 'AI', 'אוטומציה', 'ApexLeads'],
-  authors: [{ name: 'ApexLeads Team' }],
+  title: `${APP_NAME} — לומדים תוך כדי משחק`,
+  description: APP_DESCRIPTION,
+  generator: APP_NAME,
+  keywords: ['לימוד', 'משחקים', 'תלמידים', 'סטודנטים', 'חשבון', 'אנגלית', 'תרגול', 'AI', APP_NAME],
+  authors: [{ name: `${APP_NAME} Team` }],
   manifest: '/manifest.json',
   icons: {
     icon: [
       { url: '/logo-apexleads.jpg', sizes: '32x32', type: 'image/jpeg' },
-      { url: '/logo-apexleads.jpg', sizes: '16x16', type: 'image/jpeg' },
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
+      { url: '/icon.svg', type: 'image/svg+xml' },
     ],
     apple: [{ url: '/logo-apexleads.jpg', sizes: '180x180', type: 'image/jpeg' }],
   },
@@ -46,7 +41,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#4F6AF5' },
+    { media: '(prefers-color-scheme: light)', color: '#7C3AED' },
     { media: '(prefers-color-scheme: dark)', color: '#1a1a2e' },
   ],
   width: 'device-width',
@@ -59,13 +54,19 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="he" dir="rtl" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html
+      lang="he"
+      dir="rtl"
+      className={`${geistSans.variable} ${geistMono.variable} ${fredoka.variable}`}
+    >
       <body className="font-sans antialiased bg-background">
-        <AuthProvider>
-          <SessionSync />
-          {children}
-          <Toaster richColors position="top-center" dir="rtl" closeButton />
-        </AuthProvider>
+        <LocaleProvider>
+          <AuthProvider>
+            <SessionSync />
+            {children}
+            <Toaster richColors position="top-center" closeButton />
+          </AuthProvider>
+        </LocaleProvider>
       </body>
     </html>
   )

@@ -4,10 +4,6 @@ import { getAdminAuth, getAdminFirestore } from '@/lib/firebaseAdmin'
 import { requireAdminSession } from '@/lib/adminAuth'
 
 const PLANS = ['free', 'basic', 'pro', 'enterprise'] as const
-const VERTICALS = [
-  'real_estate', 'car', 'general', 'recruitment',
-  'solar_energy', 'insurance', 'mortgage', 'legal', 'accounting', 'renovation',
-] as const
 const ROLES = ['admin', 'user'] as const
 
 export async function POST(req: NextRequest) {
@@ -24,7 +20,6 @@ export async function POST(req: NextRequest) {
   const email = typeof body.email === 'string' ? body.email.trim() : ''
   const password = typeof body.password === 'string' ? body.password : ''
   const name = typeof body.name === 'string' ? body.name.trim() : ''
-  const vertical = body.vertical
   const plan = body.plan
   const role = body.role
 
@@ -35,13 +30,8 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const v = VERTICALS.includes(vertical as (typeof VERTICALS)[number]) ? vertical : null
-  const p = PLANS.includes(plan as (typeof PLANS)[number]) ? plan : null
+  const p = PLANS.includes(plan as (typeof PLANS)[number]) ? plan : 'free'
   const r = ROLES.includes(role as (typeof ROLES)[number]) ? role : 'user'
-
-  if (!v || !p) {
-    return NextResponse.json({ error: 'תחום או תוכנית לא תקינים' }, { status: 400 })
-  }
 
   try {
     const adminAuth = getAdminAuth()
@@ -57,9 +47,6 @@ export async function POST(req: NextRequest) {
       name,
       role: r,
       plan: p,
-      vertical: v,
-      scrapeVertical: v,
-      facebookConnected: false,
       isActive: true,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),

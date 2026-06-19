@@ -4,10 +4,6 @@ import { getAdminFirestore } from '@/lib/firebaseAdmin'
 import { requireAdminSession } from '@/lib/adminAuth'
 
 const PLANS = ['free', 'basic', 'pro', 'enterprise'] as const
-const VERTICALS = [
-  'real_estate', 'car', 'general', 'recruitment',
-  'solar_energy', 'insurance', 'mortgage', 'legal', 'accounting', 'renovation',
-] as const
 const ROLES = ['admin', 'user'] as const
 
 export async function PATCH(
@@ -22,10 +18,6 @@ export async function PATCH(
 
   const name = typeof body.name === 'string' ? body.name.trim().slice(0, 200) : undefined
   const isActive = typeof body.isActive === 'boolean' ? body.isActive : undefined
-  const vertical =
-    body.vertical !== undefined && VERTICALS.includes(body.vertical as (typeof VERTICALS)[number])
-      ? body.vertical
-      : undefined
   const plan =
     body.plan !== undefined && PLANS.includes(body.plan as (typeof PLANS)[number])
       ? body.plan
@@ -38,7 +30,6 @@ export async function PATCH(
   const hasField =
     name !== undefined ||
     isActive !== undefined ||
-    vertical !== undefined ||
     plan !== undefined ||
     role !== undefined
 
@@ -65,7 +56,6 @@ export async function PATCH(
     const updates: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() }
     if (name !== undefined) updates.name = name
     if (isActive !== undefined) updates.isActive = isActive
-    if (vertical !== undefined) updates.vertical = vertical
     if (plan !== undefined) updates.plan = plan
     if (role !== undefined) updates.role = role
 

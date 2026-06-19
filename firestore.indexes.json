@@ -1,62 +1,52 @@
 {
   "indexes": [
     {
-      "collectionGroup": "leads",
+      "collectionGroup": "subjects",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "level", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "leads",
+      "collectionGroup": "topics",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "subjectId", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "leads",
+      "collectionGroup": "topics",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "vertical", "order": "ASCENDING" },
-        { "fieldPath": "qualityScore", "order": "DESCENDING" }
+        { "fieldPath": "subjectId", "order": "ASCENDING" },
+        { "fieldPath": "grade", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "posts",
+      "collectionGroup": "questions",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "subjectId", "order": "ASCENDING" },
+        { "fieldPath": "grade", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "posts",
+      "collectionGroup": "games",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "status", "order": "ASCENDING" }
+        { "fieldPath": "subjectId", "order": "ASCENDING" },
+        { "fieldPath": "grade", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "posts",
+      "collectionGroup": "materials",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "scheduledAt", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "templates",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "vertical", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "subjectId", "order": "ASCENDING" },
+        { "fieldPath": "grade", "order": "ASCENDING" }
       ]
     }
   ],
