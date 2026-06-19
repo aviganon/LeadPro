@@ -23,6 +23,8 @@ import {
 } from '@/lib/db'
 import { LEVELS } from '@/lib/constants'
 import { SHENKAR_BINYAN_COURSES } from '@/lib/shenkarCourses'
+import { CONTENT_PACKS } from '@/lib/contentPacks'
+import { Sparkles } from 'lucide-react'
 import type { Level, Subject, Institution, Department } from '@/types'
 
 interface AdminUserRow {
@@ -475,6 +477,7 @@ function groupCourses(courses: Subject[]): CourseGroup[] {
 }
 
 function CourseCard({ course, onDelete }: { course: Subject; onDelete: () => Promise<void> }) {
+  const pack = course.courseNumber ? CONTENT_PACKS[course.courseNumber] : undefined
   return (
     <Card>
       <CardContent className="p-4 flex items-center gap-2">
@@ -482,9 +485,35 @@ function CourseCard({ course, onDelete }: { course: Subject; onDelete: () => Pro
           {course.courseNumber && <span className="text-muted-foreground text-sm ml-1.5">{course.courseNumber}</span>}
           {course.nameHe}
         </div>
+        {pack && <ImportContentButton course={course} />}
         <DeleteBtn label={`את הקורס "${course.nameHe}"`} onConfirm={onDelete} />
       </CardContent>
     </Card>
+  )
+}
+
+function ImportContentButton({ course }: { course: Subject }) {
+  const [busy, setBusy] = useState(false)
+  const pack = CONTENT_PACKS[course.courseNumber ?? '']
+  const run = async () => {
+    const n = (pack.questions?.length ?? 0) + (pack.materials?.length ?? 0)
+    if (!window.confirm(`לייבא תוכן מוכן (${pack.questions?.length ?? 0} שאלות, 3 משחקים, ${pack.materials?.length ?? 0} חומרי עזר) לקורס "${course.nameHe}"?`)) return
+    setBusy(true)
+    try {
+      const res = await fetch('/api/admin/import-content', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ subjectId: course.id, grade: course.gradeFrom, pack }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (res.ok) toast.success(`יובא תוכן (${d.imported ?? n} פריטים)`)
+      else toast.error(d.error ?? 'הייבוא נכשל')
+    } finally { setBusy(false) }
+  }
+  return (
+    <Button variant="secondary" size="sm" onClick={run} disabled={busy} className="shrink-0">
+      {busy ? <Loader2 className="w-4 h-4 animate-spin ml-1.5" /> : <Sparkles className="w-4 h-4 ml-1.5" />}
+      ייבא תוכן
+    </Button>
   )
 }
 
