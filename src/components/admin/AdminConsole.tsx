@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner'
 import {
   Users, BookOpen, Gamepad2, FileQuestion, Loader2, Plus, Search, ShieldCheck, ChevronLeft, Trash2,
+  RefreshCw, Wrench, UserCircle2,
 } from 'lucide-react'
 import {
   getSubjects, getInstitutions, getDepartments, getDepartmentCourses,
@@ -39,6 +40,9 @@ interface AdminUserRow {
 
 interface AdminAggregate {
   totalUsers: number
+  registeredUsers: number
+  activeRegistered: number
+  anonPlayers: number
   totalSubjects: number
   totalQuestions: number
   totalGames: number
@@ -108,6 +112,7 @@ export function AdminConsole() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [seeding, setSeeding] = useState(false)
+  const [advanced, setAdvanced] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -159,20 +164,30 @@ export function AdminConsole() {
   )
 
   const stats = [
-    { label: 'משתמשים', value: aggregate?.totalUsers ?? 0, icon: Users },
+    { label: 'משתמשים רשומים', value: aggregate?.registeredUsers ?? 0, sub: `${aggregate?.activeRegistered ?? 0} פעילים`, icon: UserCircle2 },
+    { label: 'שחקנים אנונימיים', value: aggregate?.anonPlayers ?? 0, sub: 'ללא הרשמה', icon: Users },
     { label: 'מקצועות', value: aggregate?.totalSubjects ?? 0, icon: BookOpen },
     { label: 'שאלות', value: aggregate?.totalQuestions ?? 0, icon: FileQuestion },
-    { label: 'משחקים', value: aggregate?.totalGames ?? 0, icon: Gamepad2 },
   ]
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold font-display">ניהול</h1>
-        <Button onClick={seedContent} disabled={seeding} variant="outline">
-          {seeding ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
-          זרע/עדכן תוכן בסיס
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => load()} disabled={loading} variant="ghost" size="sm" className="gap-1.5">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />רענן
+          </Button>
+          <Button onClick={() => setAdvanced((v) => !v)} variant={advanced ? 'secondary' : 'ghost'} size="sm" className="gap-1.5">
+            <Wrench className="w-4 h-4" />כלים מתקדמים
+          </Button>
+          {advanced && (
+            <Button onClick={seedContent} disabled={seeding} variant="outline" size="sm">
+              {seeding ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
+              זרע/עדכן תוכן בסיס
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -185,6 +200,7 @@ export function AdminConsole() {
               <div>
                 <div className="text-2xl font-bold">{s.value.toLocaleString('he-IL')}</div>
                 <div className="text-sm text-muted-foreground">{s.label}</div>
+                {s.sub && <div className="text-xs text-muted-foreground/70">{s.sub}</div>}
               </div>
             </CardContent>
           </Card>
@@ -201,7 +217,7 @@ export function AdminConsole() {
 
         {/* ===== CONTENT / STRUCTURE ===== */}
         <TabsContent value="content" className="pt-4">
-          <ContentManager />
+          <ContentManager advanced={advanced} />
         </TabsContent>
 
         {/* ===== USERS ===== */}
@@ -317,7 +333,7 @@ const LEVEL_LABELS: Record<Level, string> = {
   student: 'סטודנטים',
 }
 
-function ContentManager() {
+function ContentManager({ advanced }: { advanced: boolean }) {
   const [level, setLevel] = useState<Level>('elementary')
   return (
     <div className="space-y-5">
@@ -329,7 +345,7 @@ function ContentManager() {
         ))}
       </div>
 
-      {level === 'student' ? <StudentStructure /> : <SchoolContent key={level} level={level} />}
+      {level === 'student' ? <StudentStructure advanced={advanced} /> : <SchoolContent key={level} level={level} />}
     </div>
   )
 }
@@ -413,7 +429,7 @@ function Badge({ icon: Icon, n, label }: { icon: React.ElementType; n?: number; 
 
 // ----- student: institution -> department -> course -----
 
-function StudentStructure() {
+function StudentStructure({ advanced }: { advanced: boolean }) {
   const [institutions, setInstitutions] = useState<Institution[]>([])
   const [inst, setInst] = useState<Institution | null>(null)
   const [departments, setDepartments] = useState<Department[]>([])
@@ -441,7 +457,7 @@ function StudentStructure() {
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-bold font-display text-lg">קורסים — {dep.name}</h3>
           <div className="flex items-center gap-2">
-            <ImportShenkarButton institutionId={inst.id} departmentId={dep.id} onDone={() => loadCourses(dep.id)} />
+            {advanced && <ImportShenkarButton institutionId={inst.id} departmentId={dep.id} onDone={() => loadCourses(dep.id)} />}
             <AddCourseDialog institutionId={inst.id} departmentId={dep.id} onAdded={() => loadCourses(dep.id)} />
           </div>
         </div>
@@ -457,7 +473,7 @@ function StudentStructure() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {group.courses.map((c) => (
-                    <CourseCard key={c.id} course={c} onDelete={async () => { await deleteStructure('subject', c.id); loadCourses(dep.id) }} />
+                    <CourseCard key={c.id} course={c} advanced={advanced} onDelete={async () => { await deleteStructure('subject', c.id); loadCourses(dep.id) }} />
                   ))}
                 </div>
               </div>
@@ -545,7 +561,7 @@ function groupCourses(courses: Subject[]): CourseGroup[] {
   })
 }
 
-function CourseCard({ course, onDelete }: { course: Subject; onDelete: () => Promise<void> }) {
+function CourseCard({ course, onDelete, advanced }: { course: Subject; onDelete: () => Promise<void>; advanced: boolean }) {
   const pack = course.courseNumber ? CONTENT_PACKS[course.courseNumber] : undefined
   return (
     <Card>
@@ -554,7 +570,7 @@ function CourseCard({ course, onDelete }: { course: Subject; onDelete: () => Pro
           {course.courseNumber && <span className="text-muted-foreground text-sm ml-1.5">{course.courseNumber}</span>}
           {course.nameHe}
         </div>
-        {pack && <ImportContentButton course={course} />}
+        {pack && advanced && <ImportContentButton course={course} />}
         <DeleteBtn label={`את הקורס "${course.nameHe}"`} onConfirm={onDelete} />
       </CardContent>
     </Card>

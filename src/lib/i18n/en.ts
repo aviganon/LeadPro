@@ -6,6 +6,7 @@ export const en: typeof he = {
   'nav.login': 'Log in',
   'nav.logout': 'Log out',
   'nav.admin': 'Admin',
+  'nav.settings': 'Settings',
 
   'home.heroTitle': 'Learn while you play',
   'home.heroSubtitle': 'Pick a level, grade and subject — and get fun games, practice questions and smart help tailored just for you.',

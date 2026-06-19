@@ -1,23 +1,31 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useLocale } from '@/context/LocaleContext'
 import { Button } from '@/components/ui/button'
 import { LangToggle } from '@/components/LangToggle'
+import { UserMenu } from '@/components/UserMenu'
+import { getGlobalStats } from '@/lib/localProgress'
 import { APP_LOGO, APP_NAME } from '@/lib/constants'
 import {
   Gamepad2, Sparkles, GraduationCap, ArrowLeft, ArrowRight,
-  Calculator, Languages, Trophy, Brain,
+  Calculator, Languages, Trophy, Brain, Star,
 } from 'lucide-react'
 
 function Navbar() {
   const { user } = useAuth()
   const { t } = useLocale()
+  const [points, setPoints] = useState(0)
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration read from localStorage
+  useEffect(() => { setPoints(getGlobalStats().points) }, [])
+
   return (
     <nav className="fixed top-0 inset-x-0 z-50 glass">
-      <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
+      <div className="container mx-auto px-6 h-16 flex items-center justify-between gap-2">
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
           <img
             src={APP_LOGO}
             alt={`${APP_NAME} Logo`}
@@ -25,19 +33,34 @@ function Navbar() {
             width={40}
             height={40}
           />
-          <span className="text-xl font-bold gradient-text font-display">{APP_NAME}</span>
+          <span className="text-xl font-bold gradient-text font-display hidden sm:inline">{APP_NAME}</span>
         </Link>
-        <div className="flex items-center gap-2">
-          <LangToggle />
+
+        <div className="flex items-center gap-2 min-w-0">
           {user ? (
             <>
-              {user.role === 'admin' && (
-                <Button variant="ghost" size="sm" asChild><Link href="/admin">{t('nav.admin')}</Link></Button>
-              )}
-              <Button size="sm" asChild><Link href="/learn">{t('nav.learn')}</Link></Button>
+              {/* ברוך הבא + ניקוד התקדמות */}
+              <div className="hidden sm:flex flex-col items-end leading-tight min-w-0">
+                <span className="text-sm font-medium truncate max-w-[10rem]">ברוך הבא, {user.name} 👋</span>
+                {points > 0 && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-fun text-fun" />{points.toLocaleString('he-IL')} נקודות
+                  </span>
+                )}
+              </div>
+              <Button size="sm" asChild className="rounded-2xl"><Link href="/learn">{t('nav.learn')}</Link></Button>
+              <LangToggle />
+              <UserMenu />
             </>
           ) : (
-            <Button variant="ghost" size="sm" asChild><Link href="/auth">{t('nav.login')}</Link></Button>
+            <>
+              <LangToggle />
+              {/* כפתור הרשמה בולט וזוהר */}
+              <Button size="sm" asChild className="rounded-2xl animate-glow bg-gradient-to-l from-primary to-fun text-white font-bold shadow-lg">
+                <Link href="/auth?mode=signup">✨ הרשמה</Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild><Link href="/auth">{t('nav.login')}</Link></Button>
+            </>
           )}
         </div>
       </div>

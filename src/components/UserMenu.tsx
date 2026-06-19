@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { User as UserIcon, LogOut, Shield, LogIn } from 'lucide-react'
+import { User as UserIcon, LogOut, Shield, LogIn, Settings } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useLocale } from '@/context/LocaleContext'
 import { Button } from '@/components/ui/button'
@@ -42,6 +42,9 @@ export function UserMenu() {
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel className="truncate">{user.email}</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="gap-2"><Settings className="w-4 h-4" />{t('nav.settings')}</Link>
+        </DropdownMenuItem>
         {user.role === 'admin' && (
           <DropdownMenuItem asChild>
             <Link href="/admin" className="gap-2"><Shield className="w-4 h-4" />{t('nav.admin')}</Link>

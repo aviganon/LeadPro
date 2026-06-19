@@ -4,6 +4,7 @@ export const he = {
   'nav.login': 'התחברות',
   'nav.logout': 'התנתקות',
   'nav.admin': 'ניהול',
+  'nav.settings': 'הגדרות',
 
   'home.heroTitle': 'לומדים תוך כדי משחק',
   'home.heroSubtitle': 'בוחרים רמה, כיתה ומקצוע — ומקבלים משחקים, שאלות תרגול וחומרי עזר חכמים שמותאמים בדיוק אליכם.',

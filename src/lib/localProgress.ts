@@ -41,3 +41,14 @@ export function readinessPct(p: SubjectProgress): number {
   if (p.answered === 0) return 0
   return Math.round((p.correct / p.answered) * 100)
 }
+
+/** סיכום גלובלי על פני כל המקצועות — לתצוגה במסך הבית. */
+export function getGlobalStats(): { points: number; answered: number; subjects: number } {
+  const s = read()
+  const vals = Object.values(s)
+  return {
+    points: vals.reduce((a, p) => a + p.best, 0),
+    answered: vals.reduce((a, p) => a + p.answered, 0),
+    subjects: vals.filter((p) => p.answered > 0).length,
+  }
+}
