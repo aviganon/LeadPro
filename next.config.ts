@@ -11,7 +11,15 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: 'standalone',
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }]
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      // מסמכי HTML תלויים במצב המשתמש (הרשמה/ברוך הבא) ומתעדכנים בכל פריסה —
+      // לא לאפשר ל-CDN/edge להגיש דף ישן. נכסים עם hash (_next) נשארים cached.
+      {
+        source: '/((?!_next/).*)',
+        headers: [{ key: 'Cache-Control', value: 'no-store, must-revalidate' }],
+      },
+    ]
   },
   experimental: {
     serverActions: { allowedOrigins: ['localhost:3000'] },
