@@ -5,6 +5,7 @@ import {
 import { db } from './firebase'
 import type {
   User, Subject, Topic, Question, Game, Material, Progress, Level,
+  Institution, Department,
 } from '@/types'
 
 // ========== COLLECTIONS ==========
@@ -15,6 +16,8 @@ const QUESTIONS = 'questions'
 const GAMES = 'games'
 const MATERIALS = 'materials'
 const PROGRESS = 'progress'
+const INSTITUTIONS = 'institutions'
+const DEPARTMENTS = 'departments'
 
 // ========== USERS ==========
 
@@ -66,6 +69,41 @@ export async function getSubjectBySlug(slug: string): Promise<Subject | null> {
   if (snap.empty) return null
   const d = snap.docs[0]
   return { id: d.id, ...d.data() } as Subject
+}
+
+/** קורסים של מסלול סטודנטים לשנת לימוד נתונה */
+export async function getDepartmentSubjects(departmentId: string, year: number): Promise<Subject[]> {
+  const snap = await getDocs(
+    query(collection(db, SUBJECTS), where('departmentId', '==', departmentId))
+  )
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Subject))
+    .filter(s => year >= s.gradeFrom && year <= s.gradeTo)
+    .sort((a, b) => a.order - b.order)
+}
+
+/** כל הקורסים של מסלול (כל השנים) — לשימוש בניהול */
+export async function getDepartmentCourses(departmentId: string): Promise<Subject[]> {
+  const snap = await getDocs(
+    query(collection(db, SUBJECTS), where('departmentId', '==', departmentId))
+  )
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Subject))
+    .sort((a, b) => a.gradeFrom - b.gradeFrom || a.order - b.order)
+}
+
+// ========== INSTITUTIONS & DEPARTMENTS (student level) ==========
+
+export async function getInstitutions(): Promise<Institution[]> {
+  const snap = await getDocs(query(collection(db, INSTITUTIONS), orderBy('order', 'asc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Institution))
+}
+
+export async function getDepartments(institutionId: string): Promise<Department[]> {
+  const snap = await getDocs(
+    query(collection(db, DEPARTMENTS), where('institutionId', '==', institutionId), orderBy('order', 'asc'))
+  )
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Department))
 }
 
 // ========== TOPICS ==========

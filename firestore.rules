@@ -34,6 +34,8 @@ service cloud.firestore {
     // ========== LEARNING CONTENT ==========
     // Content is public (no login gate) — read by anyone. Writes only by admin.
 
+    match /institutions/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /departments/{id}   { allow read: if true; allow write: if isAdmin(); }
     match /subjects/{id}  { allow read: if true; allow write: if isAdmin(); }
     match /topics/{id}    { allow read: if true; allow write: if isAdmin(); }
     match /questions/{id} { allow read: if true; allow write: if isAdmin(); }

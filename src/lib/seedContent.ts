@@ -2,7 +2,7 @@
 // כל פריט מקבל מזהה דטרמיניסטי כדי שזריעה חוזרת לא תיצור כפילויות.
 
 export interface SeedDoc {
-  collection: 'subjects' | 'topics' | 'questions' | 'games' | 'materials'
+  collection: 'subjects' | 'topics' | 'questions' | 'games' | 'materials' | 'institutions' | 'departments'
   id: string
   data: Record<string, unknown>
 }
@@ -87,6 +87,16 @@ export function buildSeedDocs(): SeedDoc[] {
   docs.push({
     collection: 'subjects', id: 'english',
     data: { slug: 'english', level: 'elementary', nameHe: 'אנגלית', nameEn: 'English', icon: 'Languages', color: '#06B6D4', gradeFrom: 1, gradeTo: 6, order: 2 },
+  })
+
+  // --- STUDENT STRUCTURE: שנקר הנדסאים → הנדסאי בניין (קורסים יתווספו בהמשך) ---
+  docs.push({
+    collection: 'institutions', id: 'shenkar-handasaim',
+    data: { name: 'מכללת שנקר הנדסאים', type: 'college', order: 1 },
+  })
+  docs.push({
+    collection: 'departments', id: 'shenkar-binyan',
+    data: { institutionId: 'shenkar-handasaim', name: 'הנדסאי בניין', order: 1 },
   })
 
   for (let grade = 1; grade <= 6; grade++) {

@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { APP_LOGO, APP_NAME } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
+import { UserMenu } from '@/components/UserMenu'
+import { Gamepad2 } from 'lucide-react'
 import { AdminConsole } from '@/components/admin/AdminConsole'
 
 export default function AdminPage() {
@@ -47,9 +49,12 @@ export default function AdminPage() {
               <span className="font-bold text-lg">{APP_NAME}</span>
               <span className="rounded bg-warning/20 px-2 py-0.5 text-xs font-medium text-warning">Admin</span>
             </Link>
-            <Button variant="ghost" size="sm" className="text-sidebar-foreground/70" asChild>
-              <Link href="/dashboard">דשבורד</Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="text-sidebar-foreground/80 gap-1.5" asChild>
+                <Link href="/learn"><Gamepad2 className="w-4 h-4" />למסך הלמידה</Link>
+              </Button>
+              <UserMenu />
+            </div>
           </div>
         </div>
       </div>
