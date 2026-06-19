@@ -50,6 +50,13 @@ service cloud.firestore {
         request.auth.uid == progressId.split('_')[0];
     }
 
+    // ========== LEADERBOARD ==========
+    // קריאה ציבורית (להצגת הטבלה). כתיבה רק דרך השרת (Admin SDK) — שומר ניקוד מרבי ומונע זיוף.
+    match /leaderboard/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // ========== AI USAGE (cost tracking) ==========
     // נכתב רק ע"י השרת (Admin SDK עוקף חוקים). הלקוח לא יכול לכתוב; קריאה רק לאדמין.
     match /ai_usage/{id} {

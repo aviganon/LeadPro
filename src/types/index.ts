@@ -114,6 +114,16 @@ export interface Material {
   order: number
 }
 
+/** רשומת טבלת מנצחים (scope = מזהה הטבלה, למשל מקצוע+כיתה) */
+export interface LeaderboardEntry {
+  id: string
+  scope: string
+  name: string
+  score: number
+  verified: boolean   // true למשתמש מחובר
+  updatedAt: Date
+}
+
 /** התקדמות משתמש (אופציונלי — נשמר רק למחוברים) */
 export interface Progress {
   userId: string

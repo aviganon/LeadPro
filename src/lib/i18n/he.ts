@@ -35,6 +35,26 @@ export const he = {
   'subject.games': 'משחקים',
   'subject.questions': 'שאלות תרגול',
   'subject.help': 'חומרי עזר',
+  'subject.leaderboard': 'טבלת מנצחים',
+
+  'diff.label': 'רמת קושי',
+  'diff.all': 'הכל',
+  'diff.easy': 'קל',
+  'diff.medium': 'בינוני',
+  'diff.hard': 'קשה',
+
+  'ready.title': 'מוכנות למבחן',
+  'ready.answered': 'שאלות שענית',
+  'ready.best': 'שיא',
+  'ready.none': 'התחילו לתרגל כדי לראות התקדמות',
+
+  'lb.title': 'טבלת מנצחים',
+  'lb.empty': 'עוד אין תוצאות — תהיו הראשונים!',
+  'lb.join': 'הצטרפו לטבלת המנצחים',
+  'lb.joined': 'נשמרת בטבלה! 🎉',
+  'lb.namePlaceholder': 'השם שלך',
+  'lb.submit': 'שמור',
+
   'subject.play': 'שחק',
   'subject.noContent': 'עוד אין תוכן כאן — בקרוב נוסיף!',
   'subject.askAi': 'שאל את המורה הפרטי',

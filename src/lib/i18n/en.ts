@@ -37,6 +37,26 @@ export const en: typeof he = {
   'subject.games': 'Games',
   'subject.questions': 'Practice',
   'subject.help': 'Study help',
+  'subject.leaderboard': 'Leaderboard',
+
+  'diff.label': 'Difficulty',
+  'diff.all': 'All',
+  'diff.easy': 'Easy',
+  'diff.medium': 'Medium',
+  'diff.hard': 'Hard',
+
+  'ready.title': 'Exam readiness',
+  'ready.answered': 'Questions answered',
+  'ready.best': 'Best',
+  'ready.none': 'Start practicing to track progress',
+
+  'lb.title': 'Leaderboard',
+  'lb.empty': 'No scores yet — be the first!',
+  'lb.join': 'Join the leaderboard',
+  'lb.joined': 'Added to the leaderboard! 🎉',
+  'lb.namePlaceholder': 'Your name',
+  'lb.submit': 'Save',
+
   'subject.play': 'Play',
   'subject.noContent': 'No content here yet — coming soon!',
   'subject.askAi': 'Ask the AI tutor',

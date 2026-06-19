@@ -4,17 +4,24 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import * as Icons from 'lucide-react'
-import { ArrowRight, ArrowLeft, Loader2, Gamepad2, FileQuestion, BookOpen, Sparkles } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Loader2, Gamepad2, FileQuestion, BookOpen, Sparkles, Trophy, Target } from 'lucide-react'
 import { useLocale, pickLang } from '@/context/LocaleContext'
 import { LangToggle } from '@/components/LangToggle'
+import { UserMenu } from '@/components/UserMenu'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { GamePlayer } from '@/components/games/GamePlayer'
 import { Quiz } from '@/components/games/Quiz'
 import { AiTutor } from '@/components/AiTutor'
+import { Leaderboard } from '@/components/Leaderboard'
 import { getSubjectBySlug, getGames, getQuestions, getMaterials } from '@/lib/db'
+import { scopeFor } from '@/lib/leaderboard'
+import { getSubjectProgress, addQuizResult, readinessPct, type SubjectProgress } from '@/lib/localProgress'
+import { getSavedName } from '@/lib/device'
 import { APP_NAME, APP_LOGO } from '@/lib/constants'
 import type { Subject, Game, Question, Material } from '@/types'
+
+type Difficulty = 'all' | 1 | 2 | 3
 
 const GAME_EMOJI: Record<string, string> = { quiz: '❓', flashcards: '🃏', memory: '🧠' }
 
@@ -37,6 +44,11 @@ export default function SubjectHub() {
   const [genLoading, setGenLoading] = useState(false)
   const [genError, setGenError] = useState('')
 
+  // difficulty, progress/readiness, leaderboard
+  const [difficulty, setDifficulty] = useState<Difficulty>('all')
+  const [progress, setProgress] = useState<SubjectProgress | null>(null)
+  const [lbRefresh, setLbRefresh] = useState(0)
+
   useEffect(() => {
     let active = true
     setLoading(true)
@@ -45,6 +57,7 @@ export default function SubjectHub() {
         if (!active) return
         setSubject(subj)
         if (!subj) return
+        setProgress(getSubjectProgress(subj.id))
         const [g, q, m] = await Promise.all([
           getGames(subj.id, grade),
           getQuestions(subj.id, grade),
@@ -97,6 +110,23 @@ export default function SubjectHub() {
 
   const quizQuestions = useMemo(() => (questions.length ? questions : aiQuestions ?? []), [questions, aiQuestions])
 
+  const filteredQuiz = useMemo(
+    () => (difficulty === 'all' ? quizQuestions : quizQuestions.filter((q) => q.difficulty === difficulty)),
+    [quizQuestions, difficulty],
+  )
+
+  const lbScope = subject ? scopeFor(subject.id, grade) : ''
+  const onQuizComplete = (correct: number, total: number, score: number) => {
+    if (!subject) return
+    addQuizResult(subject.id, correct, total, score)
+    setProgress(getSubjectProgress(subject.id))
+    setLbRefresh((n) => n + 1)
+  }
+
+  const DIFFS: { v: Difficulty; k: 'diff.all' | 'diff.easy' | 'diff.medium' | 'diff.hard' }[] = [
+    { v: 'all', k: 'diff.all' }, { v: 1, k: 'diff.easy' }, { v: 2, k: 'diff.medium' }, { v: 3, k: 'diff.hard' },
+  ]
+
   return (
     <div className="min-h-screen bg-mesh">
       <header className="glass sticky top-0 z-50">
@@ -105,7 +135,10 @@ export default function SubjectHub() {
             <img src={APP_LOGO} alt={APP_NAME} className="w-9 h-9 rounded-2xl object-cover" width={36} height={36} />
             <span className="font-bold gradient-text font-display">{APP_NAME}</span>
           </Link>
-          <LangToggle />
+          <div className="flex items-center gap-1">
+            <LangToggle />
+            <UserMenu />
+          </div>
         </div>
       </header>
 
@@ -137,10 +170,36 @@ export default function SubjectHub() {
               </div>
             </div>
 
+            {/* Readiness / progress */}
+            <div className="gradient-card rounded-3xl border border-border p-5 mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 font-bold font-display">
+                  <Target className="w-5 h-5 text-primary" />{t('ready.title')}
+                </div>
+                {progress && progress.answered > 0 && (
+                  <span className="text-2xl font-bold gradient-text">{readinessPct(progress)}%</span>
+                )}
+              </div>
+              {progress && progress.answered > 0 ? (
+                <>
+                  <div className="h-3 rounded-full bg-muted overflow-hidden mb-3">
+                    <div className="h-full bg-gradient-to-l from-primary to-accent transition-all" style={{ width: `${readinessPct(progress)}%` }} />
+                  </div>
+                  <div className="flex gap-4 text-sm text-muted-foreground">
+                    <span>{t('ready.answered')}: <b className="text-foreground">{progress.answered}</b></span>
+                    <span>{t('ready.best')}: <b className="text-foreground">{progress.best}</b></span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('ready.none')}</p>
+              )}
+            </div>
+
             <Tabs defaultValue="games">
               <TabsList className="w-full">
                 <TabsTrigger value="games" className="flex-1 gap-1.5"><Gamepad2 className="w-4 h-4" />{t('subject.games')}</TabsTrigger>
                 <TabsTrigger value="questions" className="flex-1 gap-1.5"><FileQuestion className="w-4 h-4" />{t('subject.questions')}</TabsTrigger>
+                <TabsTrigger value="board" className="flex-1 gap-1.5"><Trophy className="w-4 h-4" />{t('subject.leaderboard')}</TabsTrigger>
                 <TabsTrigger value="help" className="flex-1 gap-1.5"><BookOpen className="w-4 h-4" />{t('subject.help')}</TabsTrigger>
               </TabsList>
 
@@ -174,7 +233,27 @@ export default function SubjectHub() {
               {/* QUESTIONS */}
               <TabsContent value="questions" className="pt-6">
                 {quizQuestions.length > 0 ? (
-                  <Quiz questions={quizQuestions} />
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap mb-5">
+                      <span className="text-sm text-muted-foreground">{t('diff.label')}:</span>
+                      {DIFFS.map((d) => (
+                        <Button
+                          key={String(d.v)}
+                          variant={difficulty === d.v ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDifficulty(d.v)}
+                          className="rounded-2xl"
+                        >
+                          {t(d.k)}
+                        </Button>
+                      ))}
+                    </div>
+                    {filteredQuiz.length > 0 ? (
+                      <Quiz key={String(difficulty)} questions={filteredQuiz} leaderboardScope={lbScope} onComplete={onQuizComplete} />
+                    ) : (
+                      <div className="py-12 text-center text-muted-foreground">{t('subject.noContent')}</div>
+                    )}
+                  </div>
                 ) : (
                   <div className="py-12 text-center">
                     <p className="text-muted-foreground mb-5">{t('subject.noContent')}</p>
@@ -185,6 +264,11 @@ export default function SubjectHub() {
                     {genError && <p className="text-sm text-destructive mt-4">{genError}</p>}
                   </div>
                 )}
+              </TabsContent>
+
+              {/* LEADERBOARD */}
+              <TabsContent value="board" className="pt-6">
+                <Leaderboard scope={lbScope} refreshKey={lbRefresh} highlightName={getSavedName()} />
               </TabsContent>
 
               {/* HELP */}

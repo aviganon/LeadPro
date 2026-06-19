@@ -1,12 +1,15 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Check, X, RotateCcw, ArrowLeft } from 'lucide-react'
+import { Check, X, RotateCcw, ArrowLeft, Trophy, Loader2 } from 'lucide-react'
 import { useLocale } from '@/context/LocaleContext'
 import { useGameSession } from '@/hooks/useGameSession'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Scoreboard } from './Scoreboard'
 import { burstConfetti } from '@/lib/confetti'
+import { submitScore } from '@/lib/leaderboard'
+import { getSavedName, saveName } from '@/lib/device'
 import type { Question } from '@/types'
 
 /** מערבב מערך (Fisher–Yates) */
@@ -23,7 +26,13 @@ function isCorrectAnswer(q: Question, given: string): boolean {
   return given.trim().toLowerCase() === String(q.answer).trim().toLowerCase()
 }
 
-export function Quiz({ questions }: { questions: Question[] }) {
+export function Quiz({
+  questions, leaderboardScope, onComplete,
+}: {
+  questions: Question[]
+  leaderboardScope?: string
+  onComplete?: (correct: number, total: number, score: number) => void
+}) {
   const { t } = useLocale()
   const session = useGameSession()
   const deck = useMemo(() => shuffle(questions), [questions])
@@ -33,6 +42,20 @@ export function Quiz({ questions }: { questions: Question[] }) {
   const [typed, setTyped] = useState('')
   const [revealed, setRevealed] = useState(false)
   const [done, setDone] = useState(false)
+
+  // טבלת מנצחים
+  const [name, setName] = useState(getSavedName())
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const sendScore = async () => {
+    if (!leaderboardScope || !name.trim()) return
+    setSaving(true)
+    saveName(name.trim())
+    const r = await submitScore(leaderboardScope, name.trim(), session.score)
+    setSaving(false)
+    if (r.ok) setSaved(true)
+  }
 
   if (deck.length === 0) return null
 
@@ -51,6 +74,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
     if (idx + 1 >= deck.length) {
       setDone(true)
       burstConfetti(60)
+      onComplete?.(session.correct, deck.length, session.score)
       return
     }
     setIdx(idx + 1)
@@ -60,17 +84,45 @@ export function Quiz({ questions }: { questions: Question[] }) {
   }
 
   const restart = () => {
-    setIdx(0); setSelected(null); setTyped(''); setRevealed(false); setDone(false)
+    setIdx(0); setSelected(null); setTyped(''); setRevealed(false); setDone(false); setSaved(false)
     session.reset()
   }
 
   if (done) {
     return (
-      <div className="text-center py-10 animate-pop">
+      <div className="text-center py-8 animate-pop max-w-md mx-auto">
         <div className="text-6xl mb-4">🏆</div>
         <h3 className="text-2xl font-bold font-display mb-2">{t('game.youGot')} {session.score} {t('game.points')}!</h3>
         <p className="text-muted-foreground mb-6">{session.correct}/{deck.length} ✓</p>
-        <Button onClick={restart} className="rounded-2xl"><RotateCcw className="w-4 h-4 ml-2" />{t('game.again')}</Button>
+
+        {leaderboardScope && (
+          saved ? (
+            <div className="mb-6 p-4 rounded-2xl bg-success/10 text-success font-medium flex items-center justify-center gap-2">
+              <Trophy className="w-5 h-5" /> {t('lb.joined')}
+            </div>
+          ) : (
+            <div className="mb-6 gradient-card rounded-2xl border border-border p-4 text-right">
+              <div className="font-medium mb-2 flex items-center gap-1.5"><Trophy className="w-4 h-4 text-fun" />{t('lb.join')}</div>
+              <div className="flex gap-2">
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t('lb.namePlaceholder')}
+                  maxLength={20}
+                  dir="auto"
+                  onKeyDown={(e) => { if (e.key === 'Enter') sendScore() }}
+                />
+                <Button onClick={sendScore} disabled={saving || !name.trim()} className="rounded-2xl shrink-0">
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t('lb.submit')}
+                </Button>
+              </div>
+            </div>
+          )
+        )}
+
+        <Button onClick={restart} variant={leaderboardScope && !saved ? 'outline' : 'default'} className="rounded-2xl">
+          <RotateCcw className="w-4 h-4 ml-2" />{t('game.again')}
+        </Button>
       </div>
     )
   }
