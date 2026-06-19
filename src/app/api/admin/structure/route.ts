@@ -64,6 +64,8 @@ export async function POST(req: NextRequest) {
       }
       if (data.institutionId) doc.institutionId = str(data.institutionId)
       if (data.departmentId) doc.departmentId = str(data.departmentId)
+      if (data.semester === 'a' || data.semester === 'b' || data.semester === 'both') doc.semester = data.semester
+      if (data.courseNumber) doc.courseNumber = str(data.courseNumber, 20)
       const ref = await db.collection('subjects').add(doc)
       return NextResponse.json({ ok: true, id: ref.id })
     }

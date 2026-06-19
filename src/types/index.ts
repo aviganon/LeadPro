@@ -53,7 +53,13 @@ export interface Subject {
   /** רק לרמת student — שיוך למוסד ומסלול */
   institutionId?: string
   departmentId?: string
+  /** רק לקורסי סטודנטים — סמסטר: 'a' / 'b' / 'both' (שנתי) */
+  semester?: Semester
+  /** מספר קורס (למשל 3855) — לתצוגה */
+  courseNumber?: string
 }
+
+export type Semester = 'a' | 'b' | 'both'
 
 export interface Topic {
   id: string

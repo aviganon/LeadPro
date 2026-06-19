@@ -22,6 +22,7 @@ import {
   getGames, getQuestions, getMaterials,
 } from '@/lib/db'
 import { LEVELS } from '@/lib/constants'
+import { SHENKAR_BINYAN_COURSES } from '@/lib/shenkarCourses'
 import type { Level, Subject, Institution, Department } from '@/types'
 
 interface AdminUserRow {
@@ -368,7 +369,10 @@ function StudentStructure() {
         <Button variant="ghost" size="sm" onClick={() => setDep(null)} className="gap-1"><ChevronLeft className="w-4 h-4 rotate-180" />{inst.name}</Button>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-bold font-display text-lg">קורסים — {dep.name}</h3>
-          <AddCourseDialog institutionId={inst.id} departmentId={dep.id} onAdded={() => loadCourses(dep.id)} />
+          <div className="flex items-center gap-2">
+            <ImportShenkarButton institutionId={inst.id} departmentId={dep.id} onDone={() => loadCourses(dep.id)} />
+            <AddCourseDialog institutionId={inst.id} departmentId={dep.id} onAdded={() => loadCourses(dep.id)} />
+          </div>
         </div>
         {courses.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground">עוד אין קורסים. הוסף קורס ←</div>
@@ -438,18 +442,47 @@ function StudentStructure() {
   )
 }
 
+const SEM_LABEL: Record<string, string> = { a: "סמסטר א'", b: "סמסטר ב'", both: 'שנתי' }
+
 function CourseCard({ course, onDelete }: { course: Subject; onDelete: () => Promise<void> }) {
   const yearLabel = course.gradeFrom === course.gradeTo ? `שנה ${course.gradeFrom}` : `שנים ${course.gradeFrom}-${course.gradeTo}`
+  const sem = course.semester ? SEM_LABEL[course.semester] : null
   return (
     <Card>
       <CardContent className="p-4 flex items-center gap-2">
         <div className="flex-1">
-          <div className="font-bold mb-1">{course.nameHe}</div>
-          <div className="text-xs text-muted-foreground">{yearLabel} · {course.slug}</div>
+          <div className="font-bold mb-1">
+            {course.courseNumber && <span className="text-muted-foreground text-sm ml-1">{course.courseNumber}</span>}
+            {course.nameHe}
+          </div>
+          <div className="text-xs text-muted-foreground">{yearLabel}{sem ? ` · ${sem}` : ''}</div>
         </div>
         <DeleteBtn label={`את הקורס "${course.nameHe}"`} onConfirm={onDelete} />
       </CardContent>
     </Card>
+  )
+}
+
+function ImportShenkarButton({ institutionId, departmentId, onDone }: { institutionId: string; departmentId: string; onDone: () => void }) {
+  const [busy, setBusy] = useState(false)
+  const run = async () => {
+    if (!window.confirm(`לייבא ${SHENKAR_BINYAN_COURSES.length} קורסים של שנה א' (הנדסאי בניין) למסלול זה?`)) return
+    setBusy(true)
+    try {
+      const res = await fetch('/api/admin/import-courses', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ departmentId, institutionId, courses: SHENKAR_BINYAN_COURSES }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (res.ok) { toast.success(`יובאו ${d.imported ?? 0} קורסים`); onDone() }
+      else toast.error(d.error ?? 'הייבוא נכשל')
+    } finally { setBusy(false) }
+  }
+  return (
+    <Button variant="outline" size="sm" onClick={run} disabled={busy}>
+      {busy ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
+      ייבא קורסי שנה א&apos;
+    </Button>
   )
 }
 
@@ -512,6 +545,7 @@ function AddCourseDialog({ institutionId, departmentId, onAdded }: { institution
   const [nameHe, setNameHe] = useState('')
   const [slug, setSlug] = useState('')
   const [year, setYear] = useState('1')
+  const [semester, setSemester] = useState('both')
   const [busy, setBusy] = useState(false)
   const submit = async () => {
     setBusy(true)
@@ -519,7 +553,7 @@ function AddCourseDialog({ institutionId, departmentId, onAdded }: { institution
       await postStructure('subject', {
         nameHe, nameEn: nameHe, slug: slug || nameHe, level: 'student',
         institutionId, departmentId, gradeFrom: Number(year), gradeTo: Number(year),
-        icon: 'BookOpen', color: '#7C3AED',
+        semester, icon: 'BookOpen', color: '#7C3AED',
       })
       toast.success('הקורס נוסף'); setOpen(false); setNameHe(''); setSlug(''); onAdded()
     } catch (e) { toast.error((e as Error).message) } finally { setBusy(false) }
@@ -532,12 +566,25 @@ function AddCourseDialog({ institutionId, departmentId, onAdded }: { institution
         <div className="space-y-4">
           <div className="space-y-2"><Label>שם הקורס</Label><Input value={nameHe} onChange={(e) => setNameHe(e.target.value)} placeholder="סטטיקה" /></div>
           <div className="space-y-2"><Label>כתובת באנגלית (slug)</Label><Input dir="ltr" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="shenkar-binyan-statics" /></div>
-          <div className="space-y-2">
-            <Label>שנה</Label>
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{[1, 2, 3, 4].map((y) => <SelectItem key={y} value={String(y)}>שנה {y}</SelectItem>)}</SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>שנה</Label>
+              <Select value={year} onValueChange={setYear}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{[1, 2, 3, 4].map((y) => <SelectItem key={y} value={String(y)}>שנה {y}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>סמסטר</Label>
+              <Select value={semester} onValueChange={setSemester}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="a">סמסטר א&apos;</SelectItem>
+                  <SelectItem value="b">סמסטר ב&apos;</SelectItem>
+                  <SelectItem value="both">שנתי</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
         <DialogFooter><Button onClick={submit} disabled={busy || !nameHe}>{busy && <Loader2 className="w-4 h-4 animate-spin ml-2" />}צור</Button></DialogFooter>

@@ -71,15 +71,20 @@ export async function getSubjectBySlug(slug: string): Promise<Subject | null> {
   return { id: d.id, ...d.data() } as Subject
 }
 
-/** קורסים של מסלול סטודנטים לשנת לימוד נתונה */
-export async function getDepartmentSubjects(departmentId: string, year: number): Promise<Subject[]> {
+/** קורסים של מסלול סטודנטים לשנה (ואופציונלית לסמסטר) נתונים */
+export async function getDepartmentSubjects(
+  departmentId: string,
+  year: number,
+  semester?: 'a' | 'b',
+): Promise<Subject[]> {
   const snap = await getDocs(
     query(collection(db, SUBJECTS), where('departmentId', '==', departmentId))
   )
   return snap.docs
     .map(d => ({ id: d.id, ...d.data() } as Subject))
     .filter(s => year >= s.gradeFrom && year <= s.gradeTo)
-    .sort((a, b) => a.order - b.order)
+    .filter(s => !semester || !s.semester || s.semester === 'both' || s.semester === semester)
+    .sort((a, b) => (a.courseNumber ?? '').localeCompare(b.courseNumber ?? '') || a.order - b.order)
 }
 
 /** כל הקורסים של מסלול (כל השנים) — לשימוש בניהול */

@@ -13,7 +13,7 @@ import { getSubjects, getInstitutions, getDepartments, getDepartmentSubjects } f
 import { LEVELS, APP_NAME, APP_LOGO } from '@/lib/constants'
 import type { Level, Subject, Institution, Department } from '@/types'
 
-type Step = 'level' | 'grade' | 'institution' | 'department' | 'year' | 'subject'
+type Step = 'level' | 'grade' | 'institution' | 'department' | 'year' | 'semester' | 'subject'
 
 function Header() {
   return (
@@ -48,6 +48,7 @@ export default function LearnWizard() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [institutionId, setInstitutionId] = useState<string | null>(null)
   const [departmentId, setDepartmentId] = useState<string | null>(null)
+  const [semester, setSemester] = useState<'a' | 'b' | null>(null)
 
   const studentLevel = LEVELS.find((l) => l.id === 'student')
 
@@ -60,18 +61,19 @@ export default function LearnWizard() {
       getDepartments(institutionId).then((d) => { if (active) { setDepartments(d); setLoading(false) } }).catch(() => { if (active) { setDepartments([]); setLoading(false) } })
     } else if (step === 'subject') {
       const loader = level === 'student' && departmentId
-        ? getDepartmentSubjects(departmentId, grade ?? 1)
+        ? getDepartmentSubjects(departmentId, grade ?? 1, semester ?? undefined)
         : level ? getSubjects(level) : Promise.resolve([])
       loader.then((s) => { if (active) { setSubjects(s); setLoading(false) } }).catch(() => { if (active) { setSubjects([]); setLoading(false) } })
     }
     return () => { active = false }
-  }, [step, institutionId, departmentId, level, grade])
+  }, [step, institutionId, departmentId, level, grade, semester])
 
   const goBack = () => {
     if (step === 'grade' || step === 'institution') setStep('level')
     else if (step === 'department') setStep('institution')
     else if (step === 'year') setStep('department')
-    else if (step === 'subject') setStep(level === 'student' ? 'year' : 'grade')
+    else if (step === 'semester') setStep('year')
+    else if (step === 'subject') setStep(level === 'student' ? 'semester' : 'grade')
   }
 
   const chooseLevel = (id: Level) => {
@@ -199,11 +201,30 @@ export default function LearnWizard() {
               {(studentLevel?.grades ?? []).map((y) => (
                 <button
                   key={y}
-                  onClick={() => { setGrade(y); setLoading(true); setStep('subject') }}
+                  onClick={() => { setGrade(y); setStep('semester') }}
                   className="aspect-square rounded-3xl bg-card border border-border hover-lift flex flex-col items-center justify-center font-display"
                 >
                   <span className="text-3xl font-bold gradient-text">{y}</span>
                   <span className="text-xs text-muted-foreground mt-1">{t('learn.year')}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Step: Semester (student) */}
+        {step === 'semester' && (
+          <section className="animate-slide-up">
+            <h1 className="text-3xl md:text-4xl font-bold mb-8 text-center font-display">{t('learn.chooseSemester')}</h1>
+            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+              {(['a', 'b'] as const).map((sem) => (
+                <button
+                  key={sem}
+                  onClick={() => { setSemester(sem); setLoading(true); setStep('subject') }}
+                  className="rounded-3xl bg-card border border-border hover-lift p-8 flex flex-col items-center justify-center font-display"
+                >
+                  <span className="text-4xl font-bold gradient-text mb-2">{sem === 'a' ? "א'" : "ב'"}</span>
+                  <span className="text-sm text-muted-foreground">{sem === 'a' ? t('learn.semesterA') : t('learn.semesterB')}</span>
                 </button>
               ))}
             </div>
