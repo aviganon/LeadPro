@@ -52,6 +52,12 @@ export default function LearnWizard() {
 
   const studentLevel = LEVELS.find((l) => l.id === 'student')
 
+  // חימום החיבור ל-Firestore כבר עם טעינת הדף (fire-and-forget) — כך הקריאה
+  // ה"קרה" הראשונה קורית ברקע, ובחירת "סטודנט" → מוסד כבר מהירה/מהמטמון.
+  useEffect(() => {
+    getInstitutions().then(setInstitutions).catch(() => {})
+  }, [])
+
   // Load list data when entering a step that needs it
   useEffect(() => {
     let active = true
@@ -78,8 +84,11 @@ export default function LearnWizard() {
 
   const chooseLevel = (id: Level) => {
     setLevel(id)
-    if (id === 'student') { setLoading(true); setStep('institution') }
-    else setStep('grade')
+    if (id === 'student') {
+      // אם המוסדות כבר נטענו מראש — אין צורך בספינר
+      if (institutions.length === 0) setLoading(true)
+      setStep('institution')
+    } else setStep('grade')
   }
 
   // for non-student levels, subjects are filtered by chosen grade

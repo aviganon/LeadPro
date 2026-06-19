@@ -1,5 +1,8 @@
 import { initializeApp, getApps, getApp } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
+import {
+  getFirestore, initializeFirestore,
+  persistentLocalCache, persistentMultipleTabManager,
+} from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { getStorage } from 'firebase/storage'
 
@@ -15,7 +18,21 @@ const firebaseConfig = {
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 
-export const db = getFirestore(app)
+// בדפדפן: מטמון מקומי קבוע (IndexedDB) — קריאות חוזרות מיידיות וחוסן בחיבור איטי/מקוטע (חשוב במובייל).
+// בשרת (SSR): Firestore רגיל ללא IndexedDB.
+function createDb() {
+  if (typeof window === 'undefined') return getFirestore(app)
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    })
+  } catch {
+    // אם כבר אותחל (למשל hot-reload) — נשתמש בקיים
+    return getFirestore(app)
+  }
+}
+
+export const db = createDb()
 export const auth = getAuth(app)
 export const storage = getStorage(app)
 export default app
