@@ -36,8 +36,9 @@ export const en: typeof he = {
 
   'subject.games': 'Games',
   'subject.questions': 'Practice',
-  'subject.help': 'Study help',
+  'subject.help': 'AI Tutor',
   'subject.leaderboard': 'Leaderboard',
+  'subject.studyRef': 'Study reference',
 
   'diff.label': 'Difficulty',
   'diff.all': 'All',

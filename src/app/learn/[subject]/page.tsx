@@ -14,6 +14,7 @@ import { GamePlayer } from '@/components/games/GamePlayer'
 import { Quiz } from '@/components/games/Quiz'
 import { AiTutor } from '@/components/AiTutor'
 import { Leaderboard } from '@/components/Leaderboard'
+import { StudyReference } from '@/components/StudyReference'
 import { getSubjectBySlug, getGames, getQuestions, getMaterials } from '@/lib/db'
 import { scopeFor } from '@/lib/leaderboard'
 import { getSubjectProgress, addQuizResult, readinessPct, type SubjectProgress } from '@/lib/localProgress'
@@ -234,6 +235,7 @@ export default function SubjectHub() {
               <TabsContent value="questions" className="pt-6">
                 {quizQuestions.length > 0 ? (
                   <div>
+                    <StudyReference materials={materials} />
                     <div className="flex items-center gap-2 flex-wrap mb-5">
                       <span className="text-sm text-muted-foreground">{t('diff.label')}:</span>
                       {DIFFS.map((d) => (
@@ -271,14 +273,8 @@ export default function SubjectHub() {
                 <Leaderboard scope={lbScope} refreshKey={lbRefresh} highlightName={getSavedName()} />
               </TabsContent>
 
-              {/* HELP */}
-              <TabsContent value="help" className="pt-6 space-y-6">
-                {materials.map((m) => (
-                  <div key={m.id} className="gradient-card rounded-3xl border border-border p-6">
-                    <h3 className="font-bold font-display text-lg mb-3">{m.title}</h3>
-                    <div className="whitespace-pre-wrap leading-relaxed text-foreground/90" dir="auto">{m.bodyMarkdown}</div>
-                  </div>
-                ))}
+              {/* HELP — מורה פרטי בלבד (חומר העזר עבר לטאב השאלות) */}
+              <TabsContent value="help" className="pt-6">
                 <AiTutor subject={subject.slug} subjectName={subjName} grade={grade} level={subject.level} />
               </TabsContent>
             </Tabs>

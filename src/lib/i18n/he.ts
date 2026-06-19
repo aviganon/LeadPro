@@ -34,8 +34,9 @@ export const he = {
 
   'subject.games': 'משחקים',
   'subject.questions': 'שאלות תרגול',
-  'subject.help': 'חומרי עזר',
+  'subject.help': 'מורה פרטי',
   'subject.leaderboard': 'טבלת מנצחים',
+  'subject.studyRef': 'חומר עזר לנושא',
 
   'diff.label': 'רמת קושי',
   'diff.all': 'הכל',
