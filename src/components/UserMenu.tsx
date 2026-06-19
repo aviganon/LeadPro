@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { User as UserIcon, LogOut, Shield, LogIn, Settings } from 'lucide-react'
+import { User as UserIcon, LogOut, Shield, Settings } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useLocale } from '@/context/LocaleContext'
 import { Button } from '@/components/ui/button'
@@ -22,9 +22,10 @@ export function UserMenu() {
   }
 
   if (!user) {
+    // כפתור אחד מאוחד — הרשמה/התחברות (דף האימות כולל את שני המצבים)
     return (
-      <Button variant="ghost" size="sm" asChild className="gap-1.5">
-        <Link href="/auth"><LogIn className="w-4 h-4" />{t('nav.login')}</Link>
+      <Button size="sm" asChild className="rounded-2xl animate-glow bg-gradient-to-l from-primary to-fun text-white font-bold shadow-lg gap-1.5">
+        <Link href="/auth">✨ {t('nav.signupLogin')}</Link>
       </Button>
     )
   }

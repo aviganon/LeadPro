@@ -55,11 +55,8 @@ function Navbar() {
           ) : (
             <>
               <LangToggle />
-              {/* כפתור הרשמה בולט וזוהר */}
-              <Button size="sm" asChild className="rounded-2xl animate-glow bg-gradient-to-l from-primary to-fun text-white font-bold shadow-lg">
-                <Link href="/auth?mode=signup">✨ הרשמה</Link>
-              </Button>
-              <Button variant="ghost" size="sm" asChild><Link href="/auth">{t('nav.login')}</Link></Button>
+              {/* כפתור אחד מאוחד — הרשמה/התחברות (זוהר) */}
+              <UserMenu />
             </>
           )}
         </div>

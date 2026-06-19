@@ -2,6 +2,7 @@ export const he = {
   'nav.home': 'בית',
   'nav.learn': 'מתחילים ללמוד',
   'nav.login': 'התחברות',
+  'nav.signupLogin': 'הרשמה / התחברות',
   'nav.logout': 'התנתקות',
   'nav.admin': 'ניהול',
   'nav.settings': 'הגדרות',

@@ -4,6 +4,7 @@ export const en: typeof he = {
   'nav.home': 'Home',
   'nav.learn': 'Start learning',
   'nav.login': 'Log in',
+  'nav.signupLogin': 'Sign up / Log in',
   'nav.logout': 'Log out',
   'nav.admin': 'Admin',
   'nav.settings': 'Settings',
