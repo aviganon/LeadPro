@@ -19,7 +19,7 @@ import { getSubjectBySlug, getGames, getQuestions, getMaterials } from '@/lib/db
 import { scopeFor } from '@/lib/leaderboard'
 import { getSubjectProgress, addQuizResult, readinessPct, type SubjectProgress } from '@/lib/localProgress'
 import { getSavedName } from '@/lib/device'
-import { APP_NAME, APP_LOGO } from '@/lib/constants'
+import { APP_NAME, APP_LOGO, gradeLabel } from '@/lib/constants'
 import type { Subject, Game, Question, Material } from '@/types'
 
 type Difficulty = 'all' | 1 | 2 | 3
@@ -166,7 +166,9 @@ export default function SubjectHub() {
               <div>
                 <h1 className="text-3xl font-bold font-display">{subjName}</h1>
                 <p className="text-muted-foreground">
-                  {subject.level === 'student' ? t('learn.year') : t('learn.grade')} {grade}
+                  {subject.level === 'student'
+                    ? `${t('learn.year')} ${grade}`
+                    : `${t('learn.grade')} ${gradeLabel(grade)}`}
                 </p>
               </div>
             </div>

@@ -12,3 +12,12 @@ export const LEVELS = [
   { id: 'middle_high', nameHe: 'חטיבה ותיכון', nameEn: 'Middle & High', emoji: '📚', grades: [7, 8, 9, 10, 11, 12] },
   { id: 'student', nameHe: 'סטודנטים', nameEn: 'Students', emoji: '🎓', grades: [1, 2, 3, 4] },
 ] as const
+
+// אותיות הכיתות בישראל: א'–יב'. לסטודנטים מציגים את מספר השנה.
+const HEB_GRADE = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'יא', 'יב']
+
+/** תווית כיתה/שנה לתצוגה: בית ספר → אות עברית; סטודנט → מספר השנה. */
+export function gradeLabel(grade: number, isStudent = false): string {
+  if (isStudent) return String(grade)
+  return HEB_GRADE[grade] ?? String(grade)
+}

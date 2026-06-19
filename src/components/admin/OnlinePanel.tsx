@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { Radio, ShieldCheck, UserCircle2 } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Radio, ShieldCheck, UserCircle2, Bell, BellRing } from 'lucide-react'
+import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { subscriberPresence, ONLINE_WINDOW_MS, type PresenceRow } from '@/lib/presence'
 
 function pageLabel(p: string): string {
@@ -18,8 +20,15 @@ function pageLabel(p: string): string {
 export function OnlinePanel() {
   const [rows, setRows] = useState<PresenceRow[]>([])
   const [now, setNow] = useState(() => Date.now())
+  const [canNotify, setCanNotify] = useState(false)
+
+  // זיהוי כניסה חדשה → התראה
+  const prevIds = useRef<Set<string>>(new Set())
+  const initialized = useRef(false)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration read of Notification.permission
+    setCanNotify(typeof Notification !== 'undefined' && Notification.permission === 'granted')
     const unsub = subscriberPresence(setRows)
     const tick = window.setInterval(() => setNow(Date.now()), 5000)
     return () => { unsub(); window.clearInterval(tick) }
@@ -34,6 +43,32 @@ export function OnlinePanel() {
   const registered = online.filter((r) => r.verified)
   const anon = online.filter((r) => !r.verified)
 
+  // התראה כשמישהו חדש נכנס (מדלגים על הטעינה הראשונה כדי לא להציף)
+  useEffect(() => {
+    const currentIds = new Set(online.map((r) => r.id))
+    if (!initialized.current) {
+      initialized.current = true
+      prevIds.current = currentIds
+      return
+    }
+    const newcomers = online.filter((r) => !prevIds.current.has(r.id))
+    for (const r of newcomers) {
+      const who = r.verified ? (r.name || 'משתמש רשום') : 'מבקר אנונימי'
+      toast(`👋 ${who} נכנס/ה`, { description: 'מישהו מחובר עכשיו' })
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try { new Notification('ApexLeads — מישהו נכנס', { body: `${who} מחובר/ת עכשיו`, icon: '/logo-apexleads.jpg' }) } catch { /* ignore */ }
+      }
+    }
+    prevIds.current = currentIds
+  }, [online])
+
+  const requestNotify = async () => {
+    if (typeof Notification === 'undefined') return
+    const p = await Notification.requestPermission()
+    setCanNotify(p === 'granted')
+    if (p === 'granted') toast.success('התראות הופעלו — תקבל הודעה כשמישהו נכנס')
+  }
+
   return (
     <Card className="border-success/30">
       <CardContent className="p-5">
@@ -44,6 +79,13 @@ export function OnlinePanel() {
               <span className="relative inline-flex rounded-full h-3 w-3 bg-success" />
             </span>
             <h3 className="font-bold font-display">מחוברים עכשיו</h3>
+            {canNotify ? (
+              <span className="text-xs text-success flex items-center gap-1"><BellRing className="w-3.5 h-3.5" />התראות פעילות</span>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={requestNotify} className="h-7 gap-1 text-xs">
+                <Bell className="w-3.5 h-3.5" />הפעל התראות
+              </Button>
+            )}
           </div>
           <div className="flex items-center gap-4 text-sm">
             <span className="text-2xl font-bold gradient-text">{online.length}</span>

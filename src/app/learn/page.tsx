@@ -10,7 +10,7 @@ import { LangToggle } from '@/components/LangToggle'
 import { UserMenu } from '@/components/UserMenu'
 import { Button } from '@/components/ui/button'
 import { getSubjects, getInstitutions, getDepartments, getDepartmentSubjects } from '@/lib/db'
-import { LEVELS, APP_NAME, APP_LOGO } from '@/lib/constants'
+import { LEVELS, APP_NAME, APP_LOGO, gradeLabel } from '@/lib/constants'
 import type { Level, Subject, Institution, Department } from '@/types'
 
 type Step = 'level' | 'grade' | 'institution' | 'department' | 'year' | 'semester' | 'subject'
@@ -137,7 +137,7 @@ export default function LearnWizard() {
                   onClick={() => { setGrade(g); setLoading(true); setStep('subject') }}
                   className="aspect-square rounded-3xl bg-card border border-border hover-lift flex flex-col items-center justify-center font-display"
                 >
-                  <span className="text-3xl font-bold gradient-text">{g}</span>
+                  <span className="text-3xl font-bold gradient-text">{gradeLabel(g)}</span>
                   <span className="text-xs text-muted-foreground mt-1">{t('learn.grade')}</span>
                 </button>
               ))}
