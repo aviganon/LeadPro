@@ -8,5 +8,13 @@
     "runtime": "nodejs20",
     "region": "europe-west1",
     "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+  },
+  "hosting": {
+    "site": "leadpro-cef15",
+    "public": "public_root",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "**", "run": { "serviceId": "leadpro", "region": "me-west1" } }
+    ]
   }
 }

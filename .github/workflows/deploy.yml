@@ -84,9 +84,11 @@ jobs:
             --format 'value(status.url)')
           echo "Deployed to: $URL"
 
-      - name: Deploy Firestore Rules
+      - name: Deploy Firestore Rules + Hosting
+        # Deploying hosting on every release purges the Firebase Hosting (Fastly)
+        # CDN cache, so updates are visible immediately (no stale HTML pages).
         run: |
           npm install -g firebase-tools
-          firebase deploy --only firestore:rules,firestore:indexes \
+          firebase deploy --only hosting,firestore:rules,firestore:indexes \
             --project ${{ env.PROJECT_ID }} \
             --token "${{ secrets.FIREBASE_TOKEN }}"
