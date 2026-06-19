@@ -20,7 +20,7 @@ export function StudyReference({ materials }: { materials: Material[] }) {
         </div>
         <h3 className="font-bold font-display">{t('subject.studyRef')}</h3>
       </div>
-      <Accordion type="single" collapsible className="w-full">
+      <Accordion type="single" collapsible defaultValue={materials[0]?.id} className="w-full">
         {materials.map((m) => (
           <AccordionItem key={m.id} value={m.id} className="border-border">
             <AccordionTrigger className="text-right hover:no-underline font-medium">{m.title}</AccordionTrigger>

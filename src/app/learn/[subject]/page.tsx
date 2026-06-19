@@ -143,7 +143,7 @@ export default function SubjectHub() {
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8 max-w-3xl">
+      <main className="container mx-auto px-6 py-8 max-w-5xl">
         <Button variant="ghost" size="sm" asChild className="mb-4 gap-1">
           <Link href="/learn"><Back className="w-4 h-4" />{t('learn.back')}</Link>
         </Button>
@@ -234,26 +234,35 @@ export default function SubjectHub() {
               {/* QUESTIONS */}
               <TabsContent value="questions" className="pt-6">
                 {quizQuestions.length > 0 ? (
-                  <div>
-                    <StudyReference materials={materials} />
-                    <div className="flex items-center gap-2 flex-wrap mb-5">
-                      <span className="text-sm text-muted-foreground">{t('diff.label')}:</span>
-                      {DIFFS.map((d) => (
-                        <Button
-                          key={String(d.v)}
-                          variant={difficulty === d.v ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setDifficulty(d.v)}
-                          className="rounded-2xl"
-                        >
-                          {t(d.k)}
-                        </Button>
-                      ))}
+                  <div className={materials.length ? 'grid gap-6 items-start lg:grid-cols-[1fr_20rem]' : ''}>
+                    {/* עמודה ראשית: השאלות (בימין ב-RTL) */}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-5">
+                        <span className="text-sm text-muted-foreground">{t('diff.label')}:</span>
+                        {DIFFS.map((d) => (
+                          <Button
+                            key={String(d.v)}
+                            variant={difficulty === d.v ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setDifficulty(d.v)}
+                            className="rounded-2xl"
+                          >
+                            {t(d.k)}
+                          </Button>
+                        ))}
+                      </div>
+                      {filteredQuiz.length > 0 ? (
+                        <Quiz key={String(difficulty)} questions={filteredQuiz} leaderboardScope={lbScope} onComplete={onQuizComplete} />
+                      ) : (
+                        <div className="py-12 text-center text-muted-foreground">{t('subject.noContent')}</div>
+                      )}
                     </div>
-                    {filteredQuiz.length > 0 ? (
-                      <Quiz key={String(difficulty)} questions={filteredQuiz} leaderboardScope={lbScope} onComplete={onQuizComplete} />
-                    ) : (
-                      <div className="py-12 text-center text-muted-foreground">{t('subject.noContent')}</div>
+
+                    {/* עמודת צד שמאל: חומר עזר לנושא */}
+                    {materials.length > 0 && (
+                      <div className="lg:sticky lg:top-20">
+                        <StudyReference materials={materials} />
+                      </div>
                     )}
                   </div>
                 ) : (
