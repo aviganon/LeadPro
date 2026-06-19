@@ -89,15 +89,8 @@ export function buildSeedDocs(): SeedDoc[] {
     data: { slug: 'english', level: 'elementary', nameHe: 'אנגלית', nameEn: 'English', icon: 'Languages', color: '#06B6D4', gradeFrom: 1, gradeTo: 6, order: 2 },
   })
 
-  // --- STUDENT STRUCTURE: שנקר הנדסאים → הנדסאי בניין (קורסים יתווספו בהמשך) ---
-  docs.push({
-    collection: 'institutions', id: 'shenkar-handasaim',
-    data: { name: 'מכללת שנקר הנדסאים', type: 'college', order: 1 },
-  })
-  docs.push({
-    collection: 'departments', id: 'shenkar-binyan',
-    data: { institutionId: 'shenkar-handasaim', name: 'הנדסאי בניין', order: 1 },
-  })
+  // הערה: מבנה הסטודנטים (מוסדות/מסלולים/קורסים) מנוהל ידנית דרך הניהול — לא דרך ה-seed,
+  // כדי שלא ייווצרו כפילויות ולא נדרוס שינויים ידניים.
 
   for (let grade = 1; grade <= 6; grade++) {
     // --- MATH ---

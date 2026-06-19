@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import {
-  Users, BookOpen, Gamepad2, FileQuestion, Loader2, Plus, Search, ShieldCheck, ChevronLeft,
+  Users, BookOpen, Gamepad2, FileQuestion, Loader2, Plus, Search, ShieldCheck, ChevronLeft, Trash2,
 } from 'lucide-react'
 import {
   getSubjects, getInstitutions, getDepartments, getDepartmentCourses,
@@ -56,6 +56,37 @@ async function postStructure(kind: string, data: Record<string, unknown>) {
   const d = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(d.error ?? 'נכשל')
   return d
+}
+
+async function deleteStructure(kind: string, id: string) {
+  const res = await fetch(`/api/admin/structure?kind=${kind}&id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    credentials: 'same-origin',
+  })
+  const d = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(d.error ?? 'מחיקה נכשלה')
+  return d
+}
+
+/** כפתור מחיקה קטן עם אישור */
+function DeleteBtn({ onConfirm, label }: { onConfirm: () => Promise<void>; label: string }) {
+  const [busy, setBusy] = useState(false)
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="text-destructive hover:text-destructive shrink-0"
+      disabled={busy}
+      onClick={async (e) => {
+        e.stopPropagation()
+        if (!window.confirm(`למחוק ${label}?`)) return
+        setBusy(true)
+        try { await onConfirm() } catch (err) { toast.error((err as Error).message) } finally { setBusy(false) }
+      }}
+    >
+      {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+    </Button>
+  )
 }
 
 export function AdminConsole() {
@@ -103,7 +134,7 @@ export function AdminConsole() {
     try {
       const res = await fetch('/api/admin/seed', { method: 'POST', credentials: 'same-origin' })
       const d = await res.json().catch(() => ({}))
-      if (res.ok) { toast.success(`נוסף/עודכן תוכן (${d.created ?? 0} פריטים)`); void load() }
+      if (res.ok) { toast.success(`סונכרן תוכן בסיס — ${d.created ?? 0} פריטים (ללא כפילויות)`); void load() }
       else toast.error(d.error ?? 'זריעת התוכן נכשלה')
     } finally {
       setSeeding(false)
@@ -343,7 +374,9 @@ function StudentStructure() {
           <div className="py-8 text-center text-muted-foreground">עוד אין קורסים. הוסף קורס ←</div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {courses.map((c) => <CourseCard key={c.id} course={c} />)}
+            {courses.map((c) => (
+              <CourseCard key={c.id} course={c} onDelete={async () => { await deleteStructure('subject', c.id); loadCourses(dep.id) }} />
+            ))}
           </div>
         )}
       </div>
@@ -363,9 +396,12 @@ function StudentStructure() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {departments.map((d) => (
-              <button key={d.id} onClick={() => { setDep(d); loadCourses(d.id) }} className="text-right">
-                <Card className="hover:border-primary/40 transition-colors"><CardContent className="p-4 font-medium">{d.name}</CardContent></Card>
-              </button>
+              <Card key={d.id} className="hover:border-primary/40 transition-colors">
+                <CardContent className="p-4 flex items-center gap-2">
+                  <button onClick={() => { setDep(d); loadCourses(d.id) }} className="flex-1 text-right font-medium">{d.name}</button>
+                  <DeleteBtn label={`את המסלול "${d.name}"`} onConfirm={async () => { await deleteStructure('department', d.id); loadDepartments(inst.id) }} />
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
@@ -386,14 +422,15 @@ function StudentStructure() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {institutions.map((i) => (
-            <button key={i.id} onClick={() => { setInst(i); loadDepartments(i.id) }} className="text-right">
-              <Card className="hover:border-primary/40 transition-colors">
-                <CardContent className="p-4">
+            <Card key={i.id} className="hover:border-primary/40 transition-colors">
+              <CardContent className="p-4 flex items-center gap-2">
+                <button onClick={() => { setInst(i); loadDepartments(i.id) }} className="flex-1 text-right">
                   <div className="font-medium">{i.name}</div>
                   <div className="text-xs text-muted-foreground">{i.type === 'university' ? 'אוניברסיטה' : 'מכללה'}</div>
-                </CardContent>
-              </Card>
-            </button>
+                </button>
+                <DeleteBtn label={`את המוסד "${i.name}"`} onConfirm={async () => { await deleteStructure('institution', i.id); loadInstitutions() }} />
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
@@ -401,13 +438,16 @@ function StudentStructure() {
   )
 }
 
-function CourseCard({ course }: { course: Subject }) {
+function CourseCard({ course, onDelete }: { course: Subject; onDelete: () => Promise<void> }) {
   const yearLabel = course.gradeFrom === course.gradeTo ? `שנה ${course.gradeFrom}` : `שנים ${course.gradeFrom}-${course.gradeTo}`
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="font-bold mb-1">{course.nameHe}</div>
-        <div className="text-xs text-muted-foreground">{yearLabel} · {course.slug}</div>
+      <CardContent className="p-4 flex items-center gap-2">
+        <div className="flex-1">
+          <div className="font-bold mb-1">{course.nameHe}</div>
+          <div className="text-xs text-muted-foreground">{yearLabel} · {course.slug}</div>
+        </div>
+        <DeleteBtn label={`את הקורס "${course.nameHe}"`} onConfirm={onDelete} />
       </CardContent>
     </Card>
   )

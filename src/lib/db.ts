@@ -56,12 +56,12 @@ export async function getAllUsers(): Promise<User[]> {
 // ========== SUBJECTS ==========
 
 export async function getSubjects(level?: Level): Promise<Subject[]> {
+  // מיון בצד הלקוח (בלי orderBy ב-Firestore) — נמנע מתלות באינדקס מורכב שצריך זמן בנייה.
   const base = collection(db, SUBJECTS)
-  const q = level
-    ? query(base, where('level', '==', level), orderBy('order', 'asc'))
-    : query(base, orderBy('order', 'asc'))
-  const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Subject))
+  const snap = await getDocs(level ? query(base, where('level', '==', level)) : query(base))
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Subject))
+    .sort((a, b) => a.order - b.order)
 }
 
 export async function getSubjectBySlug(slug: string): Promise<Subject | null> {
@@ -95,15 +95,20 @@ export async function getDepartmentCourses(departmentId: string): Promise<Subjec
 // ========== INSTITUTIONS & DEPARTMENTS (student level) ==========
 
 export async function getInstitutions(): Promise<Institution[]> {
-  const snap = await getDocs(query(collection(db, INSTITUTIONS), orderBy('order', 'asc')))
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Institution))
+  const snap = await getDocs(query(collection(db, INSTITUTIONS)))
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Institution))
+    .sort((a, b) => a.order - b.order)
 }
 
 export async function getDepartments(institutionId: string): Promise<Department[]> {
+  // בלי orderBy — מיון בצד הלקוח כדי שלא נחכה לבניית אינדקס מורכב
   const snap = await getDocs(
-    query(collection(db, DEPARTMENTS), where('institutionId', '==', institutionId), orderBy('order', 'asc'))
+    query(collection(db, DEPARTMENTS), where('institutionId', '==', institutionId))
   )
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Department))
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Department))
+    .sort((a, b) => a.order - b.order)
 }
 
 // ========== TOPICS ==========
@@ -111,10 +116,12 @@ export async function getDepartments(institutionId: string): Promise<Department[
 export async function getTopics(subjectId: string, grade?: number): Promise<Topic[]> {
   const base = collection(db, TOPICS)
   const q = grade != null
-    ? query(base, where('subjectId', '==', subjectId), where('grade', '==', grade), orderBy('order', 'asc'))
-    : query(base, where('subjectId', '==', subjectId), orderBy('order', 'asc'))
+    ? query(base, where('subjectId', '==', subjectId), where('grade', '==', grade))
+    : query(base, where('subjectId', '==', subjectId))
   const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Topic))
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Topic))
+    .sort((a, b) => a.order - b.order)
 }
 
 // ========== QUESTIONS ==========

@@ -74,3 +74,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Create failed' }, { status: 500 })
   }
 }
+
+const COLLECTION_BY_KIND: Record<string, string> = {
+  institution: 'institutions',
+  department: 'departments',
+  subject: 'subjects',
+}
+
+// DELETE /api/admin/structure?kind=&id= — מחיקת מוסד / מסלול / קורס.
+export async function DELETE(req: NextRequest) {
+  const auth = await requireAdminSession()
+  if (!auth.ok) return auth.response
+
+  const kind = req.nextUrl.searchParams.get('kind') ?? ''
+  const id = req.nextUrl.searchParams.get('id') ?? ''
+  const coll = COLLECTION_BY_KIND[kind]
+  if (!coll || !id) return NextResponse.json({ error: 'Missing kind/id' }, { status: 400 })
+
+  try {
+    const db = getAdminFirestore()
+    await db.collection(coll).doc(id).delete()
+    return NextResponse.json({ ok: true })
+  } catch (e) {
+    console.error('admin/structure DELETE', e)
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+  }
+}
