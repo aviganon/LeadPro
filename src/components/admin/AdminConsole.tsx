@@ -16,13 +16,14 @@ import {
 import { toast } from 'sonner'
 import {
   Users, BookOpen, Gamepad2, FileQuestion, Loader2, Plus, Search, ShieldCheck, ChevronLeft, Trash2,
-  RefreshCw, Wrench, UserCircle2,
+  RefreshCw, Wrench, UserCircle2, Flag,
 } from 'lucide-react'
 import {
   getSubjects, getInstitutions, getDepartments, getDepartmentCourses,
   getGames, getQuestions, getMaterials,
 } from '@/lib/db'
 import { OnlinePanel } from '@/components/admin/OnlinePanel'
+import { ReportsPanel } from '@/components/admin/ReportsPanel'
 import { LEVELS } from '@/lib/constants'
 import { SHENKAR_BINYAN_COURSES } from '@/lib/shenkarCourses'
 import { CONTENT_PACKS } from '@/lib/contentPacks'
@@ -48,6 +49,7 @@ interface AdminAggregate {
   totalQuestions: number
   totalGames: number
   totalMaterials: number
+  openReports: number
   aiCalls: number
   aiCostUsd: number
   aiInputTokens: number
@@ -169,6 +171,7 @@ export function AdminConsole() {
     { label: 'שחקנים אנונימיים', value: aggregate?.anonPlayers ?? 0, sub: 'ללא הרשמה', icon: Users },
     { label: 'מקצועות', value: aggregate?.totalSubjects ?? 0, icon: BookOpen },
     { label: 'שאלות', value: aggregate?.totalQuestions ?? 0, icon: FileQuestion },
+    { label: 'דיווחים פתוחים', value: aggregate?.openReports ?? 0, sub: 'שאלות לטיפול', icon: Flag },
   ]
 
   return (
@@ -191,7 +194,7 @@ export function AdminConsole() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {stats.map((s) => (
           <Card key={s.label}>
             <CardContent className="p-5 flex items-center gap-4">
@@ -209,6 +212,8 @@ export function AdminConsole() {
       </div>
 
       <OnlinePanel />
+
+      <ReportsPanel />
 
       <AiCostPanel aggregate={aggregate} />
 
@@ -584,8 +589,9 @@ function ImportContentButton({ course }: { course: Subject }) {
   const [busy, setBusy] = useState(false)
   const pack = CONTENT_PACKS[course.courseNumber ?? '']
   const run = async () => {
-    const n = (pack.questions?.length ?? 0) + (pack.materials?.length ?? 0)
-    if (!window.confirm(`לייבא תוכן מוכן (${pack.questions?.length ?? 0} שאלות, 3 משחקים, ${pack.materials?.length ?? 0} חומרי עזר) לקורס "${course.nameHe}"?`)) return
+    const exam = pack.examQuestions?.length ?? 0
+    const n = (pack.questions?.length ?? 0) + (pack.materials?.length ?? 0) + exam
+    if (!window.confirm(`לייבא תוכן מוכן (${pack.questions?.length ?? 0} שאלות תרגול, ${exam} שאלות מבחן, 3 משחקים, ${pack.materials?.length ?? 0} חומרי עזר) לקורס "${course.nameHe}"?`)) return
     setBusy(true)
     try {
       const res = await fetch('/api/admin/import-content', {

@@ -71,6 +71,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ========== QUESTION REPORTS (דיווחי שאלות) ==========
+    // נכתב רק ע"י השרת (Admin SDK) דרך /api/report-question. קריאה לאדמין בלבד.
+    match /question_reports/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // ========== SYSTEM CONFIG ==========
 
     match /system_config/{docId} {

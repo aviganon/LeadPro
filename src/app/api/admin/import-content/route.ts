@@ -29,14 +29,27 @@ export async function POST(req: NextRequest) {
     const batch = db.batch()
     let count = 0
 
-    // Questions
+    // Practice questions (אימון)
     ;(pack.questions ?? []).forEach((q, i) => {
       if (!q.prompt || !Array.isArray(q.options) || !q.answer) return
       const ref = db.collection('questions').doc(`${subjectId}-q-${i}`)
       batch.set(ref, {
         subjectId, level: 'student', grade, lang: 'he', type: 'mc',
         prompt: q.prompt, options: q.options, answer: q.answer,
-        explanation: q.explanation ?? '', difficulty: q.difficulty ?? 2,
+        explanation: q.explanation ?? '', difficulty: q.difficulty ?? 2, kind: 'practice',
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true })
+      count++
+    })
+
+    // Exam questions (מאגר מבחן אמיתי) — מזהה דטרמיניסטי נפרד, kind:'exam'
+    ;(pack.examQuestions ?? []).forEach((q, i) => {
+      if (!q.prompt || !Array.isArray(q.options) || !q.answer) return
+      const ref = db.collection('questions').doc(`${subjectId}-eq-${i}`)
+      batch.set(ref, {
+        subjectId, level: 'student', grade, lang: 'he', type: 'mc',
+        prompt: q.prompt, options: q.options, answer: q.answer,
+        explanation: q.explanation ?? '', difficulty: q.difficulty ?? 2, kind: 'exam',
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true })
       count++

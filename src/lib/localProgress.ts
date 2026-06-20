@@ -2,15 +2,17 @@
 const KEY = 'apex_progress'
 
 export interface SubjectProgress {
-  answered: number   // סך השאלות שנענו
-  correct: number    // סך התשובות הנכונות
-  attempts: number   // מספר סבבים שהושלמו
-  best: number       // הניקוד הגבוה ביותר
+  answered: number   // סך השאלות שנענו (תרגול)
+  correct: number    // סך התשובות הנכונות (תרגול)
+  attempts: number   // מספר סבבי תרגול שהושלמו
+  best: number       // הניקוד הגבוה ביותר בתרגול
+  bestExam: number   // הציון הגבוה ביותר במבחן (0–100)
+  examsTaken: number // מספר מבחנים שהושלמו
 }
 
-const EMPTY: SubjectProgress = { answered: 0, correct: 0, attempts: 0, best: 0 }
+const EMPTY: SubjectProgress = { answered: 0, correct: 0, attempts: 0, best: 0, bestExam: 0, examsTaken: 0 }
 
-type Store = Record<string, SubjectProgress>
+type Store = Record<string, Partial<SubjectProgress>>
 
 function read(): Store {
   if (typeof window === 'undefined') return {}
@@ -20,14 +22,20 @@ function write(s: Store) {
   try { window.localStorage.setItem(KEY, JSON.stringify(s)) } catch { /* ignore */ }
 }
 
+/** ממזג עם ברירות המחדל כך שרשומות ישנות (לפני שדות המבחן) לא ישברו. */
+function normalize(p?: Partial<SubjectProgress>): SubjectProgress {
+  return { ...EMPTY, ...(p ?? {}) }
+}
+
 export function getSubjectProgress(subjectId: string): SubjectProgress {
-  return read()[subjectId] ?? EMPTY
+  return normalize(read()[subjectId])
 }
 
 export function addQuizResult(subjectId: string, correct: number, total: number, score: number) {
   const s = read()
-  const p = s[subjectId] ?? { ...EMPTY }
+  const p = normalize(s[subjectId])
   s[subjectId] = {
+    ...p,
     answered: p.answered + total,
     correct: p.correct + correct,
     attempts: p.attempts + 1,
@@ -36,19 +44,41 @@ export function addQuizResult(subjectId: string, correct: number, total: number,
   write(s)
 }
 
-/** מוכנות = אחוז הדיוק הכולל (תשובות נכונות מתוך כל מה שנענה). */
+/** רישום תוצאת מבחן — grade באחוזים (0–100). שומר את הגבוה ביותר. */
+export function addExamResult(subjectId: string, grade: number) {
+  const s = read()
+  const p = normalize(s[subjectId])
+  s[subjectId] = {
+    ...p,
+    bestExam: Math.max(p.bestExam, Math.round(grade)),
+    examsTaken: p.examsTaken + 1,
+  }
+  write(s)
+}
+
+/**
+ * מוכנות למבחן:
+ * • אם נעשה לפחות מבחן אחד — הציון הטוב ביותר במבחן (מדד אמיתי).
+ * • אחרת — אחוז הדיוק בתרגול (אינדיקציה רכה עד שניגשים למבחן).
+ */
 export function readinessPct(p: SubjectProgress): number {
+  if (p.examsTaken > 0) return p.bestExam
   if (p.answered === 0) return 0
   return Math.round((p.correct / p.answered) * 100)
+}
+
+/** האם המוכנות מבוססת על מבחן אמיתי (ולא רק תרגול). */
+export function readinessFromExam(p: SubjectProgress): boolean {
+  return p.examsTaken > 0
 }
 
 /** סיכום גלובלי על פני כל המקצועות — לתצוגה במסך הבית. */
 export function getGlobalStats(): { points: number; answered: number; subjects: number } {
   const s = read()
-  const vals = Object.values(s)
+  const vals = Object.values(s).map(normalize)
   return {
     points: vals.reduce((a, p) => a + p.best, 0),
     answered: vals.reduce((a, p) => a + p.answered, 0),
-    subjects: vals.filter((p) => p.answered > 0).length,
+    subjects: vals.filter((p) => p.answered > 0 || p.examsTaken > 0).length,
   }
 }

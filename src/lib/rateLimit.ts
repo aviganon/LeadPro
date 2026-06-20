@@ -23,6 +23,8 @@ const LIMITS: Record<string, RateLimitConfig> = {
   scrape: { windowMs: 60 * 60 * 1000, max: 10 },
   'ai-generate': { windowMs: 60 * 60 * 1000, max: 100 },
   auth: { windowMs: 15 * 60 * 1000, max: 10 },
+  report: { windowMs: 60 * 60 * 1000, max: 40 },
+  leaderboard: { windowMs: 60 * 60 * 1000, max: 120 },
 }
 
 /** Sliding-window presets for Upstash (must align with LIMITS). */
@@ -31,6 +33,8 @@ const UPSTASH_SLIDING: Record<string, [number, string]> = {
   scrape: [10, '1 h'],
   'ai-generate': [100, '1 h'],
   auth: [10, '15 m'],
+  report: [40, '1 h'],
+  leaderboard: [120, '1 h'],
 }
 
 const distributedLimiters = new Map<string, Ratelimit>()

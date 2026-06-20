@@ -35,10 +35,12 @@ export const he = {
   'learn.noDepartments': 'עוד אין מסלולים למוסד הזה — בקרוב!',
 
   'subject.games': 'משחקים',
-  'subject.questions': 'שאלות תרגול',
+  'subject.questions': 'תרגול',
+  'subject.exam': 'מבחן',
   'subject.help': 'מורה פרטי',
   'subject.leaderboard': 'טבלת מנצחים',
   'subject.studyRef': 'חומר עזר לנושא',
+  'subject.practiceHint': 'אימון חופשי לקראת המבחן — תרגלו כמה שתרצו, זה לא נכנס לטבלת המנצחים.',
 
   'diff.label': 'רמת קושי',
   'diff.all': 'הכל',
@@ -47,9 +49,12 @@ export const he = {
   'diff.hard': 'קשה',
 
   'ready.title': 'מוכנות למבחן',
-  'ready.answered': 'שאלות שענית',
+  'ready.answered': 'שאלות שתרגלת',
   'ready.best': 'שיא',
-  'ready.none': 'התחילו לתרגל כדי לראות התקדמות',
+  'ready.none': 'התחילו לתרגל או היגשו למבחן כדי לראות מוכנות',
+  'ready.byExam': 'לפי ציון המבחן',
+  'ready.byPractice': 'לפי התרגול (היגשו למבחן למדד מדויק)',
+  'ready.examGrade': 'ציון מבחן',
 
   'lb.title': 'טבלת מנצחים',
   'lb.empty': 'עוד אין תוצאות — תהיו הראשונים!',

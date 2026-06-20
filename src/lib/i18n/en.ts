@@ -38,9 +38,11 @@ export const en: typeof he = {
 
   'subject.games': 'Games',
   'subject.questions': 'Practice',
+  'subject.exam': 'Exam',
   'subject.help': 'AI Tutor',
   'subject.leaderboard': 'Leaderboard',
   'subject.studyRef': 'Study reference',
+  'subject.practiceHint': 'Free practice for the exam — train as much as you like; this does not enter the leaderboard.',
 
   'diff.label': 'Difficulty',
   'diff.all': 'All',
@@ -49,9 +51,12 @@ export const en: typeof he = {
   'diff.hard': 'Hard',
 
   'ready.title': 'Exam readiness',
-  'ready.answered': 'Questions answered',
+  'ready.answered': 'Questions practiced',
   'ready.best': 'Best',
-  'ready.none': 'Start practicing to track progress',
+  'ready.none': 'Practice or take an exam to see readiness',
+  'ready.byExam': 'Based on your exam grade',
+  'ready.byPractice': 'Based on practice (take an exam for an exact measure)',
+  'ready.examGrade': 'Exam grade',
 
   'lb.title': 'Leaderboard',
   'lb.empty': 'No scores yet — be the first!',

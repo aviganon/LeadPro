@@ -7,6 +7,7 @@ import { useGameSession } from '@/hooks/useGameSession'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Scoreboard } from './Scoreboard'
+import { ReportQuestionButton } from '@/components/ReportQuestionButton'
 import { burstConfetti } from '@/lib/confetti'
 import { submitScore } from '@/lib/leaderboard'
 import { getSavedName, saveName } from '@/lib/device'
@@ -132,8 +133,11 @@ export function Quiz({
       <Scoreboard session={session} />
 
       <div className="mb-2 text-sm text-muted-foreground text-center">{idx + 1} / {deck.length}</div>
-      <div className="gradient-card rounded-3xl p-8 border border-border mb-6">
+      <div className="gradient-card rounded-3xl p-8 border border-border mb-3">
         <p className="text-xl md:text-2xl font-semibold text-center font-display" dir="auto">{q.prompt}</p>
+      </div>
+      <div className="flex justify-end mb-4">
+        <ReportQuestionButton questionId={q.id} subjectId={q.subjectId} grade={q.grade} prompt={q.prompt} />
       </div>
 
       {options.length > 0 ? (

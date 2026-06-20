@@ -54,7 +54,7 @@ export async function GET() {
     })
 
     // כל שאר הספירות — עמידות לכשל (לא יפילו את טעינת המשתמשים)
-    const [totalSubjects, totalQuestions, totalGames, totalMaterials, anonPlayers, ai] =
+    const [totalSubjects, totalQuestions, totalGames, totalMaterials, anonPlayers, openReports, ai] =
       await Promise.all([
         safeCount(db.collection('subjects')),
         safeCount(db.collection('questions')),
@@ -62,6 +62,8 @@ export async function GET() {
         safeCount(db.collection('materials')),
         // שחקנים אנונימיים (לא רשומים) שצברו ניקוד
         safeCount(db.collection('leaderboard').where('verified', '==', false)),
+        // דיווחי שאלות פתוחים
+        safeCount(db.collection('question_reports').where('status', '==', 'open')),
         safeAi(db),
       ])
 
@@ -79,6 +81,7 @@ export async function GET() {
         totalQuestions,
         totalGames,
         totalMaterials,
+        openReports,
         aiCalls: ai.calls,
         aiCostUsd: ai.cost,
         aiInputTokens: ai.inTok,

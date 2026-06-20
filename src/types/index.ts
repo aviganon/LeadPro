@@ -73,6 +73,9 @@ export interface Topic {
 
 export type QuestionType = 'mc' | 'numeric' | 'truefalse' | 'open'
 
+/** סוג השאלה: תרגול (אימון חופשי) או מבחן (מאגר מבחנים אמיתי). ברירת מחדל: practice. */
+export type QuestionKind = 'practice' | 'exam'
+
 export interface Question {
   id: string
   subjectId: string
@@ -86,6 +89,7 @@ export interface Question {
   answer: string           // canonical answer (index-as-string for mc, value otherwise)
   explanation?: string
   difficulty: 1 | 2 | 3
+  kind?: QuestionKind      // 'exam' = שאלת מבחן אמיתית; היעדר/‏'practice' = תרגול
 }
 
 export type GameType = 'quiz' | 'flashcards' | 'memory'

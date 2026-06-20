@@ -10,6 +10,11 @@ export function scopeFor(subjectId: string, grade: number): string {
   return `${subjectId}:${grade}`
 }
 
+/** טבלת מנצחים למצב מבחן — ציוני מבחן בלבד (0–100). נפרדת מטבלת התרגול. */
+export function examScopeFor(subjectId: string, grade: number): string {
+  return `${subjectId}:${grade}:exam`
+}
+
 /** קריאת טופ הניקוד לטבלה (מיון בצד הלקוח — בלי אינדקס מורכב) */
 export async function getLeaderboard(scope: string, top = 20): Promise<LeaderboardEntry[]> {
   const snap = await getDocs(query(collection(db, LEADERBOARD), where('scope', '==', scope)))

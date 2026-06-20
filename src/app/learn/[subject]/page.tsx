@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import * as Icons from 'lucide-react'
-import { ArrowRight, ArrowLeft, Loader2, Gamepad2, FileQuestion, BookOpen, Sparkles, Trophy, Target } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Loader2, Gamepad2, FileQuestion, BookOpen, Sparkles, Trophy, Target, ClipboardCheck } from 'lucide-react'
 import { useLocale, pickLang } from '@/context/LocaleContext'
 import { LangToggle } from '@/components/LangToggle'
 import { UserMenu } from '@/components/UserMenu'
@@ -12,12 +12,13 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { GamePlayer } from '@/components/games/GamePlayer'
 import { Quiz } from '@/components/games/Quiz'
+import { Exam } from '@/components/games/Exam'
 import { AiTutor } from '@/components/AiTutor'
 import { Leaderboard } from '@/components/Leaderboard'
 import { StudyReference } from '@/components/StudyReference'
 import { getSubjectBySlug, getGames, getQuestions, getMaterials } from '@/lib/db'
-import { scopeFor } from '@/lib/leaderboard'
-import { getSubjectProgress, addQuizResult, readinessPct, type SubjectProgress } from '@/lib/localProgress'
+import { examScopeFor } from '@/lib/leaderboard'
+import { getSubjectProgress, addQuizResult, addExamResult, readinessPct, readinessFromExam, type SubjectProgress } from '@/lib/localProgress'
 import { getSavedName } from '@/lib/device'
 import { APP_NAME, APP_LOGO, gradeLabel } from '@/lib/constants'
 import type { Subject, Game, Question, Material } from '@/types'
@@ -109,17 +110,35 @@ export default function SubjectHub() {
     }
   }
 
-  const quizQuestions = useMemo(() => (questions.length ? questions : aiQuestions ?? []), [questions, aiQuestions])
+  // הפרדה: שאלות תרגול (אימון) מול מאגר המבחן. אם אין מאגר מבחן — המבחן מורכב משאלות התרגול.
+  const practiceQuestions = useMemo(() => questions.filter((q) => q.kind !== 'exam'), [questions])
+  const examPool = useMemo(() => {
+    const ex = questions.filter((q) => q.kind === 'exam')
+    return ex.length ? ex : practiceQuestions
+  }, [questions, practiceQuestions])
+
+  const quizQuestions = useMemo(
+    () => (practiceQuestions.length ? practiceQuestions : aiQuestions ?? []),
+    [practiceQuestions, aiQuestions],
+  )
 
   const filteredQuiz = useMemo(
     () => (difficulty === 'all' ? quizQuestions : quizQuestions.filter((q) => q.difficulty === difficulty)),
     [quizQuestions, difficulty],
   )
 
-  const lbScope = subject ? scopeFor(subject.id, grade) : ''
+  // טבלת המנצחים מציגה ציוני מבחן בלבד
+  const examScope = subject ? examScopeFor(subject.id, grade) : ''
+
   const onQuizComplete = (correct: number, total: number, score: number) => {
     if (!subject) return
-    addQuizResult(subject.id, correct, total, score)
+    addQuizResult(subject.id, correct, total, score)   // תרגול — מעדכן אימון בלבד, לא טבלת מנצחים
+    setProgress(getSubjectProgress(subject.id))
+  }
+
+  const onExamComplete = (gradeResult: number) => {
+    if (!subject) return
+    addExamResult(subject.id, gradeResult)             // מבחן — משפיע על מוכנות ועל טבלת המנצחים
     setProgress(getSubjectProgress(subject.id))
     setLbRefresh((n) => n + 1)
   }
@@ -179,18 +198,23 @@ export default function SubjectHub() {
                 <div className="flex items-center gap-2 font-bold font-display">
                   <Target className="w-5 h-5 text-primary" />{t('ready.title')}
                 </div>
-                {progress && progress.answered > 0 && (
+                {progress && (progress.answered > 0 || progress.examsTaken > 0) && (
                   <span className="text-2xl font-bold gradient-text">{readinessPct(progress)}%</span>
                 )}
               </div>
-              {progress && progress.answered > 0 ? (
+              {progress && (progress.answered > 0 || progress.examsTaken > 0) ? (
                 <>
                   <div className="h-3 rounded-full bg-muted overflow-hidden mb-3">
                     <div className="h-full bg-gradient-to-l from-primary to-accent transition-all" style={{ width: `${readinessPct(progress)}%` }} />
                   </div>
-                  <div className="flex gap-4 text-sm text-muted-foreground">
+                  <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
+                    <span className="flex items-center gap-1">
+                      {readinessFromExam(progress)
+                        ? <><ClipboardCheck className="w-3.5 h-3.5 text-primary" />{t('ready.byExam')}</>
+                        : <><FileQuestion className="w-3.5 h-3.5" />{t('ready.byPractice')}</>}
+                    </span>
+                    {progress.examsTaken > 0 && <span>{t('ready.examGrade')}: <b className="text-foreground">{progress.bestExam}</b></span>}
                     <span>{t('ready.answered')}: <b className="text-foreground">{progress.answered}</b></span>
-                    <span>{t('ready.best')}: <b className="text-foreground">{progress.best}</b></span>
                   </div>
                 </>
               ) : (
@@ -199,9 +223,10 @@ export default function SubjectHub() {
             </div>
 
             <Tabs defaultValue="games">
-              <TabsList className="w-full">
+              <TabsList className="w-full flex-wrap h-auto">
                 <TabsTrigger value="games" className="flex-1 gap-1.5"><Gamepad2 className="w-4 h-4" />{t('subject.games')}</TabsTrigger>
                 <TabsTrigger value="questions" className="flex-1 gap-1.5"><FileQuestion className="w-4 h-4" />{t('subject.questions')}</TabsTrigger>
+                <TabsTrigger value="exam" className="flex-1 gap-1.5"><ClipboardCheck className="w-4 h-4" />{t('subject.exam')}</TabsTrigger>
                 <TabsTrigger value="board" className="flex-1 gap-1.5"><Trophy className="w-4 h-4" />{t('subject.leaderboard')}</TabsTrigger>
                 <TabsTrigger value="help" className="flex-1 gap-1.5"><BookOpen className="w-4 h-4" />{t('subject.help')}</TabsTrigger>
               </TabsList>
@@ -253,8 +278,11 @@ export default function SubjectHub() {
                           </Button>
                         ))}
                       </div>
+                      <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-fun" />{t('subject.practiceHint')}
+                      </p>
                       {filteredQuiz.length > 0 ? (
-                        <Quiz key={String(difficulty)} questions={filteredQuiz} leaderboardScope={lbScope} onComplete={onQuizComplete} />
+                        <Quiz key={String(difficulty)} questions={filteredQuiz} onComplete={onQuizComplete} />
                       ) : (
                         <div className="py-12 text-center text-muted-foreground">{t('subject.noContent')}</div>
                       )}
@@ -279,9 +307,14 @@ export default function SubjectHub() {
                 )}
               </TabsContent>
 
-              {/* LEADERBOARD */}
+              {/* EXAM — מבחן אמיתי, מתוזמן ומדורג; התוצאה נכנסת לטבלת המנצחים */}
+              <TabsContent value="exam" className="pt-6">
+                <Exam questions={examPool} leaderboardScope={examScope} onComplete={onExamComplete} />
+              </TabsContent>
+
+              {/* LEADERBOARD — ציוני מבחן בלבד */}
               <TabsContent value="board" className="pt-6">
-                <Leaderboard scope={lbScope} refreshKey={lbRefresh} highlightName={getSavedName()} />
+                <Leaderboard scope={examScope} refreshKey={lbRefresh} highlightName={getSavedName()} />
               </TabsContent>
 
               {/* HELP — מורה פרטי בלבד (חומר העזר עבר לטאב השאלות) */}
