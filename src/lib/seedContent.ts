@@ -271,6 +271,7 @@ export function buildSeedDocs(): SeedDoc[] {
         docs.push({ collection: 'games', id: 'hebrew-g1-read-pic2word', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'תמונה ← מילה', titleEn: 'Picture to Word', config: { mode: 'pic2word', categories: READING_CATEGORIES } } })
         docs.push({ collection: 'games', id: 'hebrew-g1-read-word2pic', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'מילה ← תמונה', titleEn: 'Word to Picture', config: { mode: 'word2pic', categories: READING_CATEGORIES } } })
         docs.push({ collection: 'games', id: 'hebrew-g1-read-memory', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'זיכרון מילים ותמונות', titleEn: 'Word-Picture Memory', config: { mode: 'memory', categories: READING_CATEGORIES } } })
+        docs.push({ collection: 'games', id: 'hebrew-g1-read-firstletter', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'מאיזו אות מתחילה?', titleEn: 'First Letter', config: { mode: 'firstletter', categories: READING_CATEGORIES } } })
       }
 
       // דף עזר קצר

@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 
-/** קוד OpenMoji לאימוג'י (ללא בורר וריאציה/ZWJ), למשל 🐶 → "1F436". */
+/** קוד OpenMoji לאימוג'י: מורידים רק בורר-וריאציה (FE0F); רצף ZWJ (200D) נשמר. 🐶 → "1F436". */
 export function emojiCode(emoji: string): string {
   return [...emoji]
     .map((c) => c.codePointAt(0) ?? 0)
-    .filter((cp) => cp !== 0xfe0f && cp !== 0x200d)
+    .filter((cp) => cp !== 0xfe0f)
     .map((cp) => cp.toString(16).toUpperCase())
     .join('-')
 }

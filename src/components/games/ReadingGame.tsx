@@ -10,9 +10,10 @@ import { WordImage } from './WordImage'
 import { burstConfetti } from '@/lib/confetti'
 import type { ReadCategory, ReadItem } from '@/lib/readingContent'
 
-export type ReadingMode = 'pic2word' | 'word2pic' | 'memory'
+export type ReadingMode = 'pic2word' | 'word2pic' | 'memory' | 'firstletter'
 
 const MAX_ROUNDS = 10
+const HEB_ALEF = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ', 'ק', 'ר', 'ש', 'ת']
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -21,6 +22,12 @@ function shuffle<T>(arr: T[]): T[] {
     ;[a[i], a[j]] = [a[j], a[i]]
   }
   return a
+}
+
+/** האות הראשונה של מילה (ללא ניקוד). */
+function firstLetter(word: string): string {
+  const base = word.replace(/[֑-ׇ]/g, '').trim()
+  return [...base][0] ?? ''
 }
 
 /** הקראת מילה (ללא ניקוד) — תמיכה דפדפנית בלבד, נכשל בשקט אם אין. */
@@ -73,6 +80,8 @@ export function ReadingGame({ mode, categories }: { mode: ReadingMode; categorie
       )}
       {mode === 'memory'
         ? <ReadMemory key={category.id} category={category} />
+        : mode === 'firstletter'
+        ? <ReadFirstLetter key={category.id} category={category} />
         : <ReadChoose key={`${category.id}-${mode}`} mode={mode} category={category} />}
     </div>
   )
@@ -179,6 +188,96 @@ function ReadChoose({ mode, category }: { mode: ReadingMode; category: ReadCateg
           <div className="flex items-center justify-center gap-3 mt-2">
             <WordImage emoji={round.item.emoji} size={48} />
             <span className="text-3xl font-bold font-display" dir="rtl">{round.item.word}</span>
+          </div>
+          <div className="flex justify-center mt-5">
+            <Button onClick={next} size="lg" className="rounded-2xl">
+              {idx + 1 >= deck.length ? t('game.finish') : t('game.next')}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ===== מאיזו אות מתחילה המילה? =====
+function ReadFirstLetter({ category }: { category: ReadCategory }) {
+  const { t } = useLocale()
+  const session = useGameSession()
+  const pool = category.items
+
+  const deck = useMemo(() => shuffle(pool).slice(0, Math.min(MAX_ROUNDS, pool.length)), [pool])
+  const rounds = useMemo(() => deck.map((item) => {
+    const correct = firstLetter(item.word)
+    const others = shuffle(HEB_ALEF.filter((l) => l !== correct)).slice(0, 3)
+    return { item, correct, opts: shuffle([correct, ...others]) }
+  }), [deck])
+
+  const [idx, setIdx] = useState(0)
+  const [picked, setPicked] = useState<string | null>(null)
+  const [done, setDone] = useState(false)
+  const [nonce, setNonce] = useState(0)
+
+  if (deck.length === 0) return null
+  const round = rounds[idx]
+  const revealed = picked !== null
+
+  const choose = (l: string) => { if (revealed) return; setPicked(l); session.record(l === round.correct) }
+  const next = () => { if (idx + 1 >= deck.length) { setDone(true); burstConfetti(60); return } setIdx(idx + 1); setPicked(null) }
+  const restart = () => { setIdx(0); setPicked(null); setDone(false); session.reset(); setNonce((n) => n + 1) }
+
+  if (done) {
+    return (
+      <div key={nonce} className="text-center py-8 animate-pop max-w-md mx-auto">
+        <div className="text-6xl mb-3">🌟</div>
+        <h3 className="text-2xl font-bold font-display mb-2">{t('game.youGot')} {session.score} {t('game.points')}!</h3>
+        <p className="text-muted-foreground mb-6">{session.correct}/{deck.length} ✓</p>
+        <Button onClick={restart} className="rounded-2xl"><RotateCcw className="w-4 h-4 ml-2" />{t('game.again')}</Button>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <Scoreboard session={session} />
+      <div className="mb-2 text-sm text-muted-foreground text-center">{idx + 1} / {deck.length}</div>
+
+      <div className="gradient-card rounded-3xl p-6 border border-border mb-3 flex flex-col items-center gap-2">
+        <WordImage emoji={round.item.emoji} size={112} />
+        <span className="text-sm text-muted-foreground">מאיזו אות מתחילה המילה?</span>
+      </div>
+
+      <div className="grid grid-cols-4 gap-3 mb-2">
+        {round.opts.map((l, i) => {
+          const isCorrect = l === round.correct
+          const isPicked = picked === l
+          let cls = 'bg-card border-border hover:border-primary/40'
+          if (revealed && isCorrect) cls = 'bg-success/15 border-success text-success'
+          else if (revealed && isPicked && !isCorrect) cls = 'bg-destructive/15 border-destructive text-destructive animate-shake'
+          return (
+            <button
+              key={i}
+              onClick={() => choose(l)}
+              disabled={revealed}
+              className={`aspect-square rounded-2xl border-2 font-bold font-display text-4xl transition-all flex items-center justify-center ${cls}`}
+              dir="rtl"
+            >
+              {l}
+            </button>
+          )
+        })}
+      </div>
+
+      {revealed && (
+        <div className="mt-5 animate-slide-up text-center">
+          <div className={`font-bold text-lg font-display ${picked === round.correct ? 'text-success' : 'text-destructive'}`}>
+            {picked === round.correct ? t('game.correct') : t('game.wrong')}
+          </div>
+          <div className="flex items-center justify-center gap-3 mt-2" dir="rtl">
+            <WordImage emoji={round.item.emoji} size={44} />
+            <span className="text-3xl font-bold font-display">
+              <span className="text-success">{round.correct}</span>{round.item.word.replace(/[֑-ׇ]/g, '').slice(1)}
+            </span>
           </div>
           <div className="flex justify-center mt-5">
             <Button onClick={next} size="lg" className="rounded-2xl">
