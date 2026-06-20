@@ -321,7 +321,7 @@ export default function SubjectHub() {
 
               {/* EXAM — מבחן אמיתי, מתוזמן ומדורג; התוצאה נכנסת לטבלת המנצחים */}
               <TabsContent value="exam" className="pt-6">
-                <Exam questions={examPool} leaderboardScope={examScope} subjectId={subject.id} grade={grade} onComplete={onExamComplete} />
+                <Exam questions={examPool} leaderboardScope={examScope} subjectId={subject.id} grade={grade} mahat={examPool.some((q) => !!q.examPaper)} onComplete={onExamComplete} />
               </TabsContent>
 
               {/* GUIDED — פתרונות מודרכים מונפשים לתרגילים חישוביים */}

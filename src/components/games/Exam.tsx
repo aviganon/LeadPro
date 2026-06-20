@@ -20,11 +20,10 @@ const PASS_GRADE = 60
 const MIXED = 'mixed'
 
 interface Preset { id: string; label: string; emoji: string; count: number | 'all'; minutes: number }
-const PRESETS: Preset[] = [
-  { id: 'quick', label: 'מהיר', emoji: '⚡', count: 10, minutes: 10 },
-  { id: 'mahat', label: 'מתכונת מה"ט', emoji: '🎯', count: 50, minutes: 180 },
-  { id: 'full', label: 'מלא', emoji: '📚', count: 'all', minutes: 0 },
-]
+const QUICK: Preset = { id: 'quick', label: 'מהיר', emoji: '⚡', count: 10, minutes: 10 }
+const FULL: Preset = { id: 'full', label: 'מלא', emoji: '📚', count: 'all', minutes: 0 }
+const PRESETS_MAHAT: Preset[] = [QUICK, { id: 'mahat', label: 'מתכונת מה"ט', emoji: '🎯', count: 50, minutes: 180 }, FULL]
+const PRESETS_STD: Preset[] = [QUICK, { id: 'std', label: 'רגיל', emoji: '🎯', count: 20, minutes: 0 }, FULL]
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -49,16 +48,18 @@ function fmtTime(ms: number): string {
 type Phase = 'config' | 'running' | 'done'
 
 export function Exam({
-  questions, leaderboardScope, subjectId, grade, onComplete,
+  questions, leaderboardScope, subjectId, grade, mahat = false, onComplete,
 }: {
   questions: Question[]
   leaderboardScope?: string
   subjectId?: string
   grade?: number
+  mahat?: boolean       // קורס מה"ט (בטיחות) → מתכונת 50/180; אחרת מבחן רגיל
   onComplete?: (grade: number) => void
 }) {
   const { user } = useAuth()
   const available = questions.length
+  const PRESETS = mahat ? PRESETS_MAHAT : PRESETS_STD
 
   // מבחנים אמיתיים שזוהו (לבחירת "מבחן ספציפי"); ריק = רק מאגר מעורבב
   const papers = useMemo(
@@ -68,8 +69,8 @@ export function Exam({
 
   const [phase, setPhase] = useState<Phase>('config')
   const [mode, setMode] = useState<'mixed' | 'specific'>('mixed')
-  const [customCount, setCustomCount] = useState(Math.min(50, available || 50))
-  const [customMin, setCustomMin] = useState(180)
+  const [customCount, setCustomCount] = useState(Math.min(mahat ? 50 : 20, available || (mahat ? 50 : 20)))
+  const [customMin, setCustomMin] = useState(mahat ? 180 : 0)
 
   // running state
   const [deck, setDeck] = useState<Question[]>([])

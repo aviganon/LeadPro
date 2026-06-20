@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, X, RotateCcw, ArrowLeft, ArrowRight, Volume2 } from 'lucide-react'
 import { useLocale } from '@/context/LocaleContext'
 import { useGameSession } from '@/hooks/useGameSession'
@@ -106,6 +106,9 @@ function ReadChoose({ mode, category }: { mode: ReadingMode; category: ReadCateg
   const [picked, setPicked] = useState<ReadItem | null>(null)
   const [done, setDone] = useState(false)
   const [nonce, setNonce] = useState(0)
+  const advanceTimer = useRef<number | null>(null)
+  const clearTimer = () => { if (advanceTimer.current) { window.clearTimeout(advanceTimer.current); advanceTimer.current = null } }
+  useEffect(() => clearTimer, [])
 
   if (deck.length === 0) return null
 
@@ -115,15 +118,18 @@ function ReadChoose({ mode, category }: { mode: ReadingMode; category: ReadCateg
   const choose = (opt: ReadItem) => {
     if (revealed) return
     setPicked(opt)
-    session.record(opt.word === round.item.word)
+    const ok = opt.word === round.item.word
+    session.record(ok)
+    if (ok) { clearTimer(); advanceTimer.current = window.setTimeout(() => next(), 1000) }
   }
 
   const next = () => {
+    clearTimer()
     if (idx + 1 >= deck.length) { setDone(true); burstConfetti(60); return }
     setIdx(idx + 1); setPicked(null)
   }
 
-  const restart = () => { setIdx(0); setPicked(null); setDone(false); session.reset(); setNonce((n) => n + 1) }
+  const restart = () => { clearTimer(); setIdx(0); setPicked(null); setDone(false); session.reset(); setNonce((n) => n + 1) }
 
   if (done) {
     return (
@@ -189,11 +195,13 @@ function ReadChoose({ mode, category }: { mode: ReadingMode; category: ReadCateg
             <WordImage emoji={round.item.emoji} size={48} />
             <span className="text-3xl font-bold font-display" dir="rtl">{round.item.word}</span>
           </div>
-          <div className="flex justify-center mt-5">
-            <Button onClick={next} size="lg" className="rounded-2xl">
-              {idx + 1 >= deck.length ? t('game.finish') : t('game.next')}
-            </Button>
-          </div>
+          {picked?.word !== round.item.word && (
+            <div className="flex justify-center mt-5">
+              <Button onClick={next} size="lg" className="rounded-2xl">
+                {idx + 1 >= deck.length ? t('game.finish') : t('game.next')}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -217,14 +225,23 @@ function ReadFirstLetter({ category }: { category: ReadCategory }) {
   const [picked, setPicked] = useState<string | null>(null)
   const [done, setDone] = useState(false)
   const [nonce, setNonce] = useState(0)
+  const advanceTimer = useRef<number | null>(null)
+  const clearTimer = () => { if (advanceTimer.current) { window.clearTimeout(advanceTimer.current); advanceTimer.current = null } }
+  useEffect(() => clearTimer, [])
 
   if (deck.length === 0) return null
   const round = rounds[idx]
   const revealed = picked !== null
 
-  const choose = (l: string) => { if (revealed) return; setPicked(l); session.record(l === round.correct) }
-  const next = () => { if (idx + 1 >= deck.length) { setDone(true); burstConfetti(60); return } setIdx(idx + 1); setPicked(null) }
-  const restart = () => { setIdx(0); setPicked(null); setDone(false); session.reset(); setNonce((n) => n + 1) }
+  const choose = (l: string) => {
+    if (revealed) return
+    setPicked(l)
+    const ok = l === round.correct
+    session.record(ok)
+    if (ok) { clearTimer(); advanceTimer.current = window.setTimeout(() => next(), 1000) }
+  }
+  const next = () => { clearTimer(); if (idx + 1 >= deck.length) { setDone(true); burstConfetti(60); return } setIdx(idx + 1); setPicked(null) }
+  const restart = () => { clearTimer(); setIdx(0); setPicked(null); setDone(false); session.reset(); setNonce((n) => n + 1) }
 
   if (done) {
     return (
@@ -279,11 +296,13 @@ function ReadFirstLetter({ category }: { category: ReadCategory }) {
               <span className="text-success">{round.correct}</span>{round.item.word.replace(/[֑-ׇ]/g, '').slice(1)}
             </span>
           </div>
-          <div className="flex justify-center mt-5">
-            <Button onClick={next} size="lg" className="rounded-2xl">
-              {idx + 1 >= deck.length ? t('game.finish') : t('game.next')}
-            </Button>
-          </div>
+          {picked !== round.correct && (
+            <div className="flex justify-center mt-5">
+              <Button onClick={next} size="lg" className="rounded-2xl">
+                {idx + 1 >= deck.length ? t('game.finish') : t('game.next')}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

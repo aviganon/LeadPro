@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, X, RotateCcw, ArrowLeft, Trophy, Loader2 } from 'lucide-react'
 import { useLocale } from '@/context/LocaleContext'
 import { useGameSession } from '@/hooks/useGameSession'
@@ -58,6 +58,11 @@ export function Quiz({
     if (r.ok) setSaved(true)
   }
 
+  // התקדמות אוטומטית לשאלה הבאה לאחר תשובה נכונה
+  const advanceTimer = useRef<number | null>(null)
+  const clearTimer = () => { if (advanceTimer.current) { window.clearTimeout(advanceTimer.current); advanceTimer.current = null } }
+  useEffect(() => clearTimer, [])
+
   if (deck.length === 0) return null
 
   const q = deck[idx]
@@ -69,9 +74,11 @@ export function Quiz({
     setSelected(value)
     setRevealed(true)
     session.record(ok)
+    if (ok) { clearTimer(); advanceTimer.current = window.setTimeout(() => next(), 900) }
   }
 
   const next = () => {
+    clearTimer()
     if (idx + 1 >= deck.length) {
       setDone(true)
       burstConfetti(60)
@@ -85,6 +92,7 @@ export function Quiz({
   }
 
   const restart = () => {
+    clearTimer()
     setIdx(0); setSelected(null); setTyped(''); setRevealed(false); setDone(false); setSaved(false)
     session.reset()
   }
@@ -186,12 +194,15 @@ export function Quiz({
             {isCorrectAnswer(q, selected ?? typed) ? t('game.correct') : `${t('game.wrong')} — ${q.answer}`}
           </div>
           {q.explanation && <p className="text-center text-muted-foreground mt-2" dir="auto">{q.explanation}</p>}
-          <div className="flex justify-center mt-5">
-            <Button onClick={next} size="lg" className="rounded-2xl">
-              {idx + 1 >= deck.length ? t('game.finish') : t('game.next')}
-              <ArrowLeft className="w-4 h-4 mr-2" />
-            </Button>
-          </div>
+          {/* תשובה נכונה → התקדמות אוטומטית; תשובה שגויה → כפתור ידני (כדי ללמוד מהתשובה) */}
+          {!isCorrectAnswer(q, selected ?? typed) && (
+            <div className="flex justify-center mt-5">
+              <Button onClick={next} size="lg" className="rounded-2xl">
+                {idx + 1 >= deck.length ? t('game.finish') : t('game.next')}
+                <ArrowLeft className="w-4 h-4 mr-2" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

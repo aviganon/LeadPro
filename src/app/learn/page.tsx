@@ -62,6 +62,31 @@ export default function LearnWizard() {
     getInstitutions().then(setInstitutions).catch(() => {})
   }, [])
 
+  // שחזור המיקום באשף — כך ש"חזרה" מקורס מחזירה לרשימת המקצועות ולא להתחלה.
+  // (קריאת sessionStorage לאחר hydration; ריבוי setState כאן הוא חד-פעמי בעליה.)
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('apex_wizard')
+      if (!raw) return
+      const c = JSON.parse(raw) as { level?: Level; grade?: number; institutionId?: string; departmentId?: string; semester?: 'a' | 'b' }
+      if (!c.level) return
+      setLevel(c.level)
+      if (c.grade != null) setGrade(c.grade)
+      if (c.institutionId) setInstitutionId(c.institutionId)
+      if (c.departmentId) setDepartmentId(c.departmentId)
+      if (c.semester) setSemester(c.semester)
+      setStep('subject')
+    } catch { /* ignore */ }
+  }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const goToSubject = (slug: string) => {
+    try { sessionStorage.setItem('apex_wizard', JSON.stringify({ level, grade, institutionId, departmentId, semester })) } catch { /* ignore */ }
+    router.push(`/learn/${slug}?grade=${grade}`)
+  }
+  const resetWizard = () => { try { sessionStorage.removeItem('apex_wizard') } catch { /* ignore */ } }
+
   useEffect(() => {
     let active = true
     if (step === 'institution') {
@@ -78,7 +103,7 @@ export default function LearnWizard() {
   }, [step, institutionId, departmentId, level, grade, semester])
 
   const goBack = () => {
-    if (step === 'grade' || step === 'institution') setStep('level')
+    if (step === 'grade' || step === 'institution') { resetWizard(); setStep('level') }
     else if (step === 'department') setStep('institution')
     else if (step === 'year') setStep('department')
     else if (step === 'semester') setStep('year')
@@ -86,6 +111,7 @@ export default function LearnWizard() {
   }
 
   const chooseLevel = (id: Level) => {
+    resetWizard()
     setLevel(id)
     if (id === 'student') {
       if (institutions.length === 0) setLoading(true)
@@ -324,7 +350,7 @@ export default function LearnWizard() {
                     return (
                       <button
                         key={s.id}
-                        onClick={() => router.push(`/learn/${s.slug}?grade=${grade}`)}
+                        onClick={() => goToSubject(s.slug)}
                         className="group rounded-3xl p-6 border border-border bg-card/70 backdrop-blur-sm hover-lift flex items-center gap-4 text-right"
                       >
                         <div
