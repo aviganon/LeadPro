@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   try {
     const db = getAdminFirestore()
     const snap = await db.collection('question_reports').limit(500).get()
-    const reports = snap.docs
+    const raw = snap.docs
       .map((d) => {
         const x = d.data()
         return {
@@ -30,6 +30,18 @@ export async function GET(req: NextRequest) {
       })
       .filter((r) => includeResolved || r.status === 'open')
       .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+
+    // העשרה בשם המקצוע — קריאה אחת לאוסף המקצועות שמופיעים בדיווחים
+    const ids = [...new Set(raw.map((r) => r.subjectId).filter(Boolean))]
+    const nameById = new Map<string, string>()
+    await Promise.all(ids.map(async (id) => {
+      try {
+        const s = await db.collection('subjects').doc(id).get()
+        if (s.exists) nameById.set(id, (s.data()?.nameHe as string) || (s.data()?.nameEn as string) || id)
+      } catch { /* ignore */ }
+    }))
+
+    const reports = raw.map((r) => ({ ...r, subjectName: nameById.get(r.subjectId) || r.subjectId || 'לא ידוע' }))
 
     return NextResponse.json({ reports })
   } catch (e) {
