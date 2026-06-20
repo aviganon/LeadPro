@@ -6,6 +6,7 @@ import { useLocale } from '@/context/LocaleContext'
 import { useGameSession } from '@/hooks/useGameSession'
 import { Button } from '@/components/ui/button'
 import { Scoreboard } from './Scoreboard'
+import { WordImage } from './WordImage'
 import { burstConfetti } from '@/lib/confetti'
 import type { ReadCategory, ReadItem } from '@/lib/readingContent'
 
@@ -54,7 +55,7 @@ export function ReadingGame({ mode, categories }: { mode: ReadingMode; categorie
               onClick={() => setCatId(c.id)}
               className="gradient-card rounded-3xl p-6 border border-border hover-lift flex flex-col items-center gap-2"
             >
-              <span className="text-5xl">{c.emoji}</span>
+              <WordImage emoji={c.emoji} size={60} />
               <span className="font-bold font-display text-lg" dir="rtl">{c.name}</span>
             </button>
           ))}
@@ -134,7 +135,7 @@ function ReadChoose({ mode, category }: { mode: ReadingMode; category: ReadCateg
       {/* גירוי: תמונה גדולה או מילה מנוקדת גדולה */}
       <div className="gradient-card rounded-3xl p-8 border border-border mb-6 flex items-center justify-center min-h-[8rem]">
         {mode === 'pic2word' ? (
-          <span className="text-8xl">{round.item.emoji}</span>
+          <WordImage emoji={round.item.emoji} size={128} />
         ) : (
           <button onClick={() => speak(round.item.word)} className="flex items-center gap-3 group" title="השמע">
             <span className="text-5xl md:text-6xl font-bold font-display" dir="rtl">{round.item.word}</span>
@@ -161,7 +162,7 @@ function ReadChoose({ mode, category }: { mode: ReadingMode; category: ReadCateg
             >
               {mode === 'pic2word'
                 ? <span className="text-3xl md:text-4xl font-display">{opt.word}</span>
-                : <span className="text-6xl">{opt.emoji}</span>}
+                : <WordImage emoji={opt.emoji} size={76} />}
               {revealed && isCorrect && <Check className="w-5 h-5 shrink-0" />}
               {revealed && isPicked && !isCorrect && <X className="w-5 h-5 shrink-0" />}
             </button>
@@ -176,7 +177,7 @@ function ReadChoose({ mode, category }: { mode: ReadingMode; category: ReadCateg
           </div>
           {/* תמיד מציגים מילה+תמונה יחד אחרי תשובה — חיזוק קריאה */}
           <div className="flex items-center justify-center gap-3 mt-2">
-            <span className="text-4xl">{round.item.emoji}</span>
+            <WordImage emoji={round.item.emoji} size={48} />
             <span className="text-3xl font-bold font-display" dir="rtl">{round.item.word}</span>
           </div>
           <div className="flex justify-center mt-5">
@@ -269,7 +270,7 @@ function ReadMemory({ category }: { category: ReadCategory }) {
             >
               {isUp
                 ? (tile.kind === 'emoji'
-                    ? <span className="text-4xl">{tile.label}</span>
+                    ? <WordImage emoji={tile.label} size={52} />
                     : <span className="text-xl md:text-2xl font-bold font-display">{tile.label}</span>)
                 : <span className="text-2xl text-primary-foreground">?</span>}
             </button>
