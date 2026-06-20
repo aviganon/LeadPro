@@ -3,6 +3,8 @@
 import { Quiz } from './Quiz'
 import { Flashcards, type FlashCard } from './Flashcards'
 import { Memory, type MemoryPair } from './Memory'
+import { ReadingGame, type ReadingMode } from './ReadingGame'
+import type { ReadCategory } from '@/lib/readingContent'
 import type { Game, Question } from '@/types'
 
 /**
@@ -22,6 +24,12 @@ export function GamePlayer({ game, questionBank }: { game: Game; questionBank: Q
   if (game.type === 'memory') {
     const pairs = (config.pairs as MemoryPair[] | undefined) ?? []
     return <Memory pairs={pairs} />
+  }
+
+  if (game.type === 'reading') {
+    const mode = (config.mode as ReadingMode | undefined) ?? 'pic2word'
+    const categories = (config.categories as ReadCategory[] | undefined) ?? []
+    return <ReadingGame mode={mode} categories={categories} />
   }
 
   // quiz (default)

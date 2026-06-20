@@ -27,7 +27,7 @@ import type { Subject, Game, Question, Material } from '@/types'
 
 type Difficulty = 'all' | 1 | 2 | 3
 
-const GAME_EMOJI: Record<string, string> = { quiz: '❓', flashcards: '🃏', memory: '🧠' }
+const GAME_EMOJI: Record<string, string> = { quiz: '❓', flashcards: '🃏', memory: '🧠', reading: '📖' }
 
 export default function SubjectHub() {
   const params = useParams<{ subject: string }>()

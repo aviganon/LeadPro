@@ -108,7 +108,7 @@ export interface ExamResult {
   lastAt: Date
 }
 
-export type GameType = 'quiz' | 'flashcards' | 'memory'
+export type GameType = 'quiz' | 'flashcards' | 'memory' | 'reading'
 
 export interface Game {
   id: string

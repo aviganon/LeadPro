@@ -2,6 +2,8 @@
 // מתמטיקה (מחולל לפי כיתה × 3 רמות קושי), אנגלית, עברית, מדע.
 // כל פריט מקבל מזהה דטרמיניסטי כדי שזריעה חוזרת לא תיצור כפילויות.
 
+import { READING_CATEGORIES } from './readingContent'
+
 export interface SeedDoc {
   collection: 'subjects' | 'topics' | 'questions' | 'games' | 'materials' | 'institutions' | 'departments'
   id: string
@@ -263,6 +265,12 @@ export function buildSeedDocs(): SeedDoc[] {
         const vocab = VOCAB[grade] ?? VOCAB[3]
         docs.push({ collection: 'games', id: `english-g${grade}-flashcards`, data: { subjectId: 'english', type: 'flashcards', level: 'elementary', grade, titleHe: 'כרטיסיות מילים', titleEn: 'Word Flashcards', config: { cards: vocab.map((w) => ({ front: w.en, back: w.he })) } } })
         docs.push({ collection: 'games', id: `english-g${grade}-memory`, data: { subjectId: 'english', type: 'memory', level: 'elementary', grade, titleHe: 'זיכרון מילים', titleEn: 'Word Memory', config: { pairs: vocab.map((w) => ({ a: w.en, b: w.he })) } } })
+      }
+      // עברית כיתה א' — משחקי לימוד קריאה עם ניקוד (מילים + תמונות)
+      if (s.id === 'hebrew' && grade === 1) {
+        docs.push({ collection: 'games', id: 'hebrew-g1-read-pic2word', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'תמונה ← מילה', titleEn: 'Picture to Word', config: { mode: 'pic2word', categories: READING_CATEGORIES } } })
+        docs.push({ collection: 'games', id: 'hebrew-g1-read-word2pic', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'מילה ← תמונה', titleEn: 'Word to Picture', config: { mode: 'word2pic', categories: READING_CATEGORIES } } })
+        docs.push({ collection: 'games', id: 'hebrew-g1-read-memory', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'זיכרון מילים ותמונות', titleEn: 'Word-Picture Memory', config: { mode: 'memory', categories: READING_CATEGORIES } } })
       }
 
       // דף עזר קצר
