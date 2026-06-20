@@ -50,8 +50,8 @@ export function ReportQuestionButton({
 
   if (done) {
     return (
-      <span className={`inline-flex items-center gap-1 text-xs text-success ${className ?? ''}`}>
-        <Check className="w-3.5 h-3.5" /> דווח, תודה
+      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-success/15 text-success ${className ?? ''}`}>
+        <Check className="w-4 h-4" /> דווח, תודה!
       </span>
     )
   }
@@ -61,10 +61,10 @@ export function ReportQuestionButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors ${className ?? ''}`}
+        className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors ${className ?? ''}`}
         title="דיווח על השאלה"
       >
-        <Flag className="w-3.5 h-3.5" /> דיווח על השאלה
+        <Flag className="w-4 h-4" /> דיווח על השאלה
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

@@ -447,7 +447,7 @@ export function Exam({
         <span className="text-sm text-muted-foreground">שאלה {idx + 1} מתוך {deck.length}</span>
         <button
           onClick={toggleFlag}
-          className={`text-xs flex items-center gap-1 transition-colors ${isFlagged ? 'text-fun font-medium' : 'text-muted-foreground hover:text-fun'}`}
+          className={`text-xs font-medium flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${isFlagged ? 'bg-fun text-white border-fun' : 'border-fun/40 bg-fun/10 text-fun hover:bg-fun/20'}`}
         >
           {isFlagged ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
           {isFlagged ? 'מסומנת לחזרה' : 'סמן לחזרה'}

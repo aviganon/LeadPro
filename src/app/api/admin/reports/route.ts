@@ -24,6 +24,8 @@ export async function GET(req: NextRequest) {
           grade: typeof x.grade === 'number' ? x.grade : 0,
           prompt: x.prompt ?? '',
           reason: x.reason ?? '',
+          topic: x.topic ?? '',
+          needsReview: x.needsReview === true,
           status: x.status === 'resolved' ? 'resolved' : 'open',
           createdAt: x.createdAt instanceof Timestamp ? x.createdAt.toDate().toISOString() : null,
         }
@@ -31,7 +33,7 @@ export async function GET(req: NextRequest) {
       .filter((r) => includeResolved || r.status === 'open')
       .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
 
-    // העשרה בשם המקצוע — קריאה אחת לאוסף המקצועות שמופיעים בדיווחים
+    // העשרה בשם המקצוע
     const ids = [...new Set(raw.map((r) => r.subjectId).filter(Boolean))]
     const nameById = new Map<string, string>()
     await Promise.all(ids.map(async (id) => {
@@ -41,7 +43,37 @@ export async function GET(req: NextRequest) {
       } catch { /* ignore */ }
     }))
 
-    const reports = raw.map((r) => ({ ...r, subjectName: nameById.get(r.subjectId) || r.subjectId || 'לא ידוע' }))
+    // העשרה בשדות השאלה הנוכחיים (לעריכה) — קריאה אחת לכל שאלה ייחודית
+    const qids = [...new Set(raw.map((r) => r.questionId).filter((q) => q && !q.startsWith('ai-')))]
+    const qById = new Map<string, { options: string[]; answer: string; explanation: string; difficulty: number; topic: string }>()
+    await Promise.all(qids.map(async (qid) => {
+      try {
+        const s = await db.collection('questions').doc(qid).get()
+        if (s.exists) {
+          const d = s.data() ?? {}
+          qById.set(qid, {
+            options: Array.isArray(d.options) ? d.options : [],
+            answer: typeof d.answer === 'string' ? d.answer : '',
+            explanation: typeof d.explanation === 'string' ? d.explanation : '',
+            difficulty: typeof d.difficulty === 'number' ? d.difficulty : 2,
+            topic: typeof d.topic === 'string' ? d.topic : '',
+          })
+        }
+      } catch { /* ignore */ }
+    }))
+
+    const reports = raw.map((r) => {
+      const q = qById.get(r.questionId)
+      return {
+        ...r,
+        subjectName: nameById.get(r.subjectId) || r.subjectId || 'לא ידוע',
+        topic: r.topic || q?.topic || '',
+        options: q?.options ?? [],
+        answer: q?.answer ?? '',
+        explanation: q?.explanation ?? '',
+        difficulty: q?.difficulty ?? 2,
+      }
+    })
 
     return NextResponse.json({ reports })
   } catch (e) {
@@ -50,27 +82,51 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PATCH /api/admin/reports — סימון דיווח כטופל. body: { id, status }
+interface EditFields { prompt?: string; options?: string[]; answer?: string; explanation?: string; difficulty?: number; topic?: string }
+
+// PATCH /api/admin/reports
+//  • עריכה:  { id, action: 'edit', question: {...} } — מעדכן את השאלה עצמה
+//  • טיפול:  { id, status: 'resolved'|'open' } — מחזיר/מסיר את השאלה מהמאגר
 export async function PATCH(req: NextRequest) {
   const auth = await requireAdminSession()
   if (!auth.ok) return auth.response
 
-  let body: { id?: string; status?: string }
+  let body: { id?: string; status?: string; action?: string; question?: EditFields }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const id = (body.id ?? '').toString().trim()
-  const status = body.status === 'open' ? 'open' : 'resolved'
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
   try {
     const db = getAdminFirestore()
     const ref = db.collection('question_reports').doc(id)
+    const reportSnap = await ref.get()
+    const qId = reportSnap.data()?.questionId as string | undefined
+
+    // ===== עריכת השאלה =====
+    if (body.action === 'edit') {
+      const q = body.question ?? {}
+      if (!qId || qId.startsWith('ai-')) return NextResponse.json({ error: 'השאלה אינה ניתנת לעריכה' }, { status: 400 })
+      const options = (q.options ?? []).map((o) => String(o).trim()).filter(Boolean)
+      const answer = String(q.answer ?? '').trim()
+      const prompt = String(q.prompt ?? '').trim()
+      if (!prompt || options.length < 2) return NextResponse.json({ error: 'נדרשים ניסוח ולפחות 2 אפשרויות' }, { status: 400 })
+      if (!options.includes(answer)) return NextResponse.json({ error: 'התשובה חייבת להיות זהה לאחת האפשרויות' }, { status: 400 })
+      const diff = q.difficulty === 1 || q.difficulty === 3 ? q.difficulty : 2
+      const topic = String(q.topic ?? '').trim()
+      await db.collection('questions').doc(qId).set({
+        prompt, options, answer, explanation: String(q.explanation ?? '').trim(), difficulty: diff, topic,
+      }, { merge: true })
+      // שיקוף הניסוח/הנושא בדיווח עצמו
+      await ref.set({ prompt, topic }, { merge: true })
+      return NextResponse.json({ ok: true })
+    }
+
+    // ===== טיפול בדיווח =====
+    const status = body.status === 'open' ? 'open' : 'resolved'
     await ref.set({ status }, { merge: true })
-    // טיפול בדיווח (resolved) → השאלה חוזרת למאגר
-    if (status === 'resolved') {
-      const qId = (await ref.get()).data()?.questionId as string | undefined
-      if (qId && !qId.startsWith('ai-')) {
-        try { await db.collection('questions').doc(qId).set({ reportedHidden: false }, { merge: true }) } catch { /* ignore */ }
-      }
+    if (status === 'resolved' && qId && !qId.startsWith('ai-')) {
+      // אישור → השאלה חוזרת למאגר וכבר אינה "לבדיקה"
+      try { await db.collection('questions').doc(qId).set({ reportedHidden: false, needsReview: false }, { merge: true }) } catch { /* ignore */ }
     }
     return NextResponse.json({ ok: true })
   } catch (e) {

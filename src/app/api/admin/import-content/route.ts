@@ -45,15 +45,29 @@ export async function POST(req: NextRequest) {
     // Exam questions (מאגר מבחן אמיתי) — מזהה דטרמיניסטי נפרד, kind:'exam'
     ;(pack.examQuestions ?? []).forEach((q, i) => {
       if (!q.prompt || !Array.isArray(q.options) || !q.answer) return
-      const ref = db.collection('questions').doc(`${subjectId}-eq-${i}`)
-      batch.set(ref, {
+      const qid = `${subjectId}-eq-${i}`
+      const data: Record<string, unknown> = {
         subjectId, level: 'student', grade, lang: 'he', type: 'mc',
         prompt: q.prompt, options: q.options, answer: q.answer,
         explanation: q.explanation ?? '', difficulty: q.difficulty ?? 2, kind: 'exam',
-        examPaper: q.examPaper ?? '',
+        examPaper: q.examPaper ?? '', topic: q.topic ?? '', needsReview: q.needsReview ?? false,
         updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true })
+      }
+      // שאלה לא ודאית — מוסתרת מהמשתמשים עד אישור. (לא נוגעים ב-reportedHidden של שאלות רגילות
+      // כדי לא לבטל הסתרה שנוצרה מדיווח משתמש.)
+      if (q.needsReview) data.reportedHidden = true
+      batch.set(db.collection('questions').doc(qid), data, { merge: true })
       count++
+
+      // דיווח אוטומטי בניהול לשאלה לא ודאית — מקובץ לפי נושא
+      if (q.needsReview) {
+        batch.set(db.collection('question_reports').doc(`review__${qid}`), {
+          questionId: qid, subjectId, grade, prompt: q.prompt,
+          topic: q.topic ?? '', reason: 'תשובה לא ודאית – נדרשת בדיקה/עריכה',
+          needsReview: true, status: 'open', deviceId: null,
+          updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
+        }, { merge: true })
+      }
     })
 
     // Quiz game (uses the question bank automatically)

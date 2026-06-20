@@ -92,6 +92,8 @@ export interface Question {
   kind?: QuestionKind      // 'exam' = שאלת מבחן אמיתית; היעדר/‏'practice' = תרגול
   examPaper?: string       // מזהה מבחן המקור (למשל "קיץ 2002") — לבחירת מבחן ספציפי
   reportedHidden?: boolean // הוסתרה מהמאגר עקב דיווח, עד טיפול הניהול
+  needsReview?: boolean    // שאלה שהתשובה הנכונה שלה אינה ודאית — ממתינה לעריכה/אישור
+  topic?: string           // נושא (למשל "חפירות", "פיגומים") — לקיבוץ בניהול
 }
 
 /** תוצאת מבחן של משתמש רשום (נשמר לפי owner). docId = `${userId}__${subjectId}__${grade}__${paper}` */
