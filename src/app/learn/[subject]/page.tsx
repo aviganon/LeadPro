@@ -16,6 +16,8 @@ import { Exam } from '@/components/games/Exam'
 import { AiTutor } from '@/components/AiTutor'
 import { Leaderboard } from '@/components/Leaderboard'
 import { StudyReference } from '@/components/StudyReference'
+import { LearningBackground } from '@/components/LearningBackground'
+import { levelTheme } from '@/lib/levelTheme'
 import { getSubjectBySlug, getGames, getQuestions, getMaterials } from '@/lib/db'
 import { examScopeFor } from '@/lib/leaderboard'
 import { getSubjectProgress, addQuizResult, addExamResult, readinessPct, readinessFromExam, type SubjectProgress } from '@/lib/localProgress'
@@ -129,6 +131,7 @@ export default function SubjectHub() {
 
   // טבלת המנצחים מציגה ציוני מבחן בלבד
   const examScope = subject ? examScopeFor(subject.id, grade) : ''
+  const theme = levelTheme(subject?.level)
 
   const onQuizComplete = (correct: number, total: number, score: number) => {
     if (!subject) return
@@ -148,7 +151,9 @@ export default function SubjectHub() {
   ]
 
   return (
-    <div className="min-h-screen bg-mesh">
+    <div className="min-h-screen bg-mesh relative">
+      <LearningBackground accent={theme?.accent} fixed />
+      <div className="relative z-10">
       <header className="glass sticky top-0 z-50">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
@@ -325,6 +330,7 @@ export default function SubjectHub() {
           </>
         )}
       </main>
+      </div>
     </div>
   )
 }

@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import * as Icons from 'lucide-react'
 import {
-  ArrowLeft, ArrowRight, Loader2, Building2, GraduationCap, Shapes, Atom,
-  Ruler, Compass, Calculator, PenTool, Sigma, Pi, BookOpen, FlaskConical, Globe2, Check,
+  ArrowLeft, ArrowRight, Loader2, Building2, GraduationCap,
+  Ruler, Compass, Calculator, Sigma, Atom, Check,
 } from 'lucide-react'
+import { LearningBackground } from '@/components/LearningBackground'
+import { LEVEL_THEME } from '@/lib/levelTheme'
 import { useLocale, pickLang } from '@/context/LocaleContext'
 import { LangToggle } from '@/components/LangToggle'
 import { UserMenu } from '@/components/UserMenu'
@@ -17,93 +19,6 @@ import { LEVELS, APP_NAME, APP_LOGO, gradeLabel } from '@/lib/constants'
 import type { Level, Subject, Institution, Department } from '@/types'
 
 type Step = 'level' | 'grade' | 'institution' | 'department' | 'year' | 'semester' | 'subject'
-
-// ===== ערכת עיצוב לכל רמה — צבע, גרדיאנט, אייקון וכותרת משנה =====
-interface LevelTheme {
-  icon: React.ElementType
-  tagline: string
-  grad: string        // גרדיאנט לכותרת/אייקון
-  accent: string      // צבע מבטא (oklch)
-  soft: string        // רקע רך למבטא
-  glyphs: string[]    // סמלי למידה אופייניים לרמה
-}
-const LEVEL_THEME: Record<string, LevelTheme> = {
-  elementary: {
-    icon: Shapes,
-    tagline: 'בונים יסודות חזקים — בהנאה',
-    grad: 'linear-gradient(135deg, oklch(0.82 0.16 75) 0%, oklch(0.68 0.2 30) 100%)',
-    accent: 'oklch(0.7 0.19 45)',
-    soft: 'oklch(0.7 0.19 45 / 0.12)',
-    glyphs: ['＋', '−', 'ABC', '△', '123'],
-  },
-  middle_high: {
-    icon: Atom,
-    tagline: 'מגלים, חוקרים ומעמיקים',
-    grad: 'linear-gradient(135deg, oklch(0.74 0.15 195) 0%, oklch(0.58 0.25 295) 100%)',
-    accent: 'oklch(0.62 0.2 250)',
-    soft: 'oklch(0.62 0.2 250 / 0.12)',
-    glyphs: ['π', 'Σ', '√', 'H₂O', '∞'],
-  },
-  student: {
-    icon: GraduationCap,
-    tagline: 'לתואר, למקצוע ולהסמכה',
-    grad: 'linear-gradient(135deg, oklch(0.56 0.16 285) 0%, oklch(0.44 0.07 265) 100%)',
-    accent: 'oklch(0.55 0.18 285)',
-    soft: 'oklch(0.55 0.18 285 / 0.12)',
-    glyphs: ['∫', 'Δ', 'λ', '∂', 'Σℱ'],
-  },
-}
-
-// ===== רקע למידה דקורטיבי — נייר משבצות + סמלים מרחפים =====
-const FLOATING: { node: React.ReactNode; cls: string; delay: string }[] = [
-  { node: <Pi className="w-full h-full" />, cls: 'top-[14%] right-[8%] w-10 h-10', delay: '0s' },
-  { node: <Sigma className="w-full h-full" />, cls: 'top-[26%] left-[10%] w-9 h-9', delay: '1.2s' },
-  { node: <Ruler className="w-full h-full" />, cls: 'top-[60%] right-[12%] w-11 h-11', delay: '0.6s' },
-  { node: <Compass className="w-full h-full" />, cls: 'bottom-[16%] left-[14%] w-10 h-10', delay: '2s' },
-  { node: <Calculator className="w-full h-full" />, cls: 'top-[42%] right-[22%] w-8 h-8', delay: '1.6s' },
-  { node: <PenTool className="w-full h-full" />, cls: 'bottom-[28%] right-[30%] w-8 h-8', delay: '0.9s' },
-  { node: <FlaskConical className="w-full h-full" />, cls: 'top-[70%] left-[26%] w-9 h-9', delay: '2.4s' },
-  { node: <BookOpen className="w-full h-full" />, cls: 'top-[10%] left-[30%] w-9 h-9', delay: '1.8s' },
-  { node: <Globe2 className="w-full h-full" />, cls: 'bottom-[10%] right-[44%] w-8 h-8', delay: '0.4s' },
-  { node: <span className="text-2xl font-display">∑</span>, cls: 'top-[52%] left-[6%]', delay: '2.1s' },
-  { node: <span className="text-2xl font-display">√x</span>, cls: 'bottom-[40%] left-[40%]', delay: '1.1s' },
-  { node: <span className="text-xl font-display">a²+b²</span>, cls: 'top-[34%] left-[44%]', delay: '0.7s' },
-]
-
-function LearningBackground({ accent }: { accent?: string }) {
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      {/* נייר משבצות (סרגל חישובים) — דועך בשוליים */}
-      <div
-        className="absolute inset-0 opacity-50 dark:opacity-30"
-        style={{
-          backgroundImage:
-            'linear-gradient(color-mix(in oklch, var(--foreground) 8%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklch, var(--foreground) 8%, transparent) 1px, transparent 1px)',
-          backgroundSize: '38px 38px',
-          WebkitMaskImage: 'radial-gradient(ellipse 80% 70% at 50% 35%, black 35%, transparent 78%)',
-          maskImage: 'radial-gradient(ellipse 80% 70% at 50% 35%, black 35%, transparent 78%)',
-        }}
-      />
-      {/* הילת צבע לפי הרמה הנבחרת */}
-      {accent && (
-        <div
-          className="absolute -top-32 left-1/2 -translate-x-1/2 w-[42rem] h-[42rem] rounded-full blur-3xl opacity-25 transition-colors duration-700"
-          style={{ background: `radial-gradient(circle, ${accent} 0%, transparent 70%)` }}
-        />
-      )}
-      {/* סמלי למידה מרחפים */}
-      {FLOATING.map((f, i) => (
-        <div
-          key={i}
-          className={`absolute animate-float ${f.cls}`}
-          style={{ animationDelay: f.delay, color: accent ? `color-mix(in oklch, ${accent} 35%, var(--muted-foreground))` : 'var(--muted-foreground)', opacity: 0.22 }}
-        >
-          {f.node}
-        </div>
-      ))}
-    </div>
-  )
-}
 
 function Header() {
   return (
