@@ -151,8 +151,8 @@ export default function SubjectHub() {
   ]
 
   return (
-    <div className="min-h-screen bg-mesh relative">
-      <LearningBackground accent={theme?.accent} fixed />
+    <div className="min-h-screen bg-mesh relative overflow-hidden">
+      <LearningBackground accent={theme?.accent} />
       <div className="relative z-10">
       <header className="glass sticky top-0 z-50">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
