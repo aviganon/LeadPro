@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
         subjectId, level: 'student', grade, lang: 'he', type: 'mc',
         prompt: q.prompt, options: q.options, answer: q.answer,
         explanation: q.explanation ?? '', difficulty: q.difficulty ?? 2, kind: 'exam',
+        examPaper: q.examPaper ?? '',
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true })
       count++

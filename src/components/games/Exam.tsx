@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Clock, Trophy, RotateCcw, Check, X, ArrowLeft, ArrowRight, Loader2, Flag, Timer, ListChecks, Award,
+  Clock, Trophy, RotateCcw, Check, X, ArrowLeft, ArrowRight, Loader2, Flag, Timer, ListChecks, Award, Shuffle, FileText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +17,7 @@ const PASS_GRADE = 60
 interface Preset { id: string; label: string; emoji: string; count: number | 'all'; minutes: number; desc: string }
 const PRESETS: Preset[] = [
   { id: 'quick', label: 'מהיר', emoji: '⚡', count: 10, minutes: 10, desc: '10 שאלות · 10 דקות' },
-  { id: 'standard', label: 'משרד החינוך', emoji: '🎯', count: 25, minutes: 30, desc: '25 שאלות · 30 דקות' },
+  { id: 'mahat', label: 'מתכונת מה"ט', emoji: '🎯', count: 50, minutes: 180, desc: '50 שאלות · 3 שעות' },
   { id: 'full', label: 'מלא', emoji: '📚', count: 'all', minutes: 0, desc: 'כל השאלות · ללא הגבלת זמן' },
 ]
 
@@ -52,9 +52,16 @@ export function Exam({
 }) {
   const available = questions.length
 
+  // מבחנים אמיתיים שזוהו (לבחירת "מבחן ספציפי"); ריק = רק מאגר מעורבב
+  const papers = useMemo(
+    () => [...new Set(questions.map((q) => q.examPaper).filter((p): p is string => !!p))],
+    [questions],
+  )
+
   const [phase, setPhase] = useState<Phase>('config')
-  const [customCount, setCustomCount] = useState(Math.min(25, available || 25))
-  const [customMin, setCustomMin] = useState(30)
+  const [mode, setMode] = useState<'mixed' | 'specific'>('mixed')
+  const [customCount, setCustomCount] = useState(Math.min(50, available || 50))
+  const [customMin, setCustomMin] = useState(180)
 
   // running state
   const [deck, setDeck] = useState<Question[]>([])
@@ -72,9 +79,7 @@ export function Exam({
   // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration read of saved name (avoids SSR mismatch)
   useEffect(() => { setName(getSavedName()) }, [])
 
-  const start = useCallback((count: number | 'all', minutes: number) => {
-    const n = count === 'all' ? available : Math.min(count, available)
-    const d = shuffle(questions).slice(0, Math.max(1, n))
+  const begin = useCallback((d: Question[], minutes: number) => {
     const t = Date.now()
     setDeck(d)
     setAnswers({})
@@ -83,7 +88,18 @@ export function Exam({
     setNow(t)
     setSaved(false)
     setPhase('running')
-  }, [questions, available])
+  }, [])
+
+  // מבחן מעורבב — שאלות אקראיות מכל המאגר
+  const start = useCallback((count: number | 'all', minutes: number) => {
+    const n = count === 'all' ? available : Math.min(count, available)
+    begin(shuffle(questions).slice(0, Math.max(1, n)), minutes)
+  }, [questions, available, begin])
+
+  // מבחן ספציפי — כל שאלות מבחן מסוים, בסדר המקורי
+  const startPaper = useCallback((paper: string, minutes: number) => {
+    begin(questions.filter((q) => q.examPaper === paper), minutes)
+  }, [questions, begin])
 
   // חישוב ציון וסיום המבחן
   const finish = useCallback(() => {
@@ -141,46 +157,93 @@ export function Exam({
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3 mb-6">
-          {PRESETS.map((p) => {
-            const n = p.count === 'all' ? available : Math.min(p.count, available)
-            return (
-              <button
-                key={p.id}
-                onClick={() => start(p.count, p.minutes)}
-                className="gradient-card rounded-3xl p-5 border border-border hover-lift text-center"
-              >
-                <div className="text-3xl mb-2">{p.emoji}</div>
-                <div className="font-bold font-display">{p.label}</div>
-                <div className="text-xs text-muted-foreground mt-1">{n} שאלות</div>
-                <div className="text-xs text-muted-foreground">{p.minutes > 0 ? `${p.minutes} דקות` : 'ללא זמן'}</div>
-              </button>
-            )
-          })}
-        </div>
-
-        <div className="rounded-3xl border border-border p-5">
-          <div className="font-medium mb-3 flex items-center gap-2"><ListChecks className="w-4 h-4 text-primary" />מבחן מותאם אישית</div>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <label className="space-y-1.5">
-              <span className="text-sm text-muted-foreground">מספר שאלות (1–{available})</span>
-              <Input
-                type="number" min={1} max={available} value={customCount}
-                onChange={(e) => setCustomCount(Math.max(1, Math.min(available, Number(e.target.value) || 1)))}
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="text-sm text-muted-foreground">דקות (0 = ללא זמן)</span>
-              <Input
-                type="number" min={0} max={180} value={customMin}
-                onChange={(e) => setCustomMin(Math.max(0, Math.min(180, Number(e.target.value) || 0)))}
-              />
-            </label>
+        {/* בחירת מצב: שאלות מעורבבות מכל המבחנים, או מבחן ספציפי */}
+        {papers.length > 0 && (
+          <div className="flex gap-2 mb-6 p-1 rounded-2xl bg-muted">
+            <button
+              onClick={() => setMode('mixed')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${mode === 'mixed' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}
+            >
+              <Shuffle className="w-4 h-4" />שאלות מעורבבות
+            </button>
+            <button
+              onClick={() => setMode('specific')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${mode === 'specific' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}
+            >
+              <FileText className="w-4 h-4" />מבחן ספציפי
+            </button>
           </div>
-          <Button onClick={() => start(customCount, customMin)} className="w-full rounded-2xl" size="lg">
-            <Timer className="w-4 h-4 ml-2" />התחל מבחן
-          </Button>
-        </div>
+        )}
+
+        {/* מבחן ספציפי — בחירת מבחן עבר מלא */}
+        {papers.length > 0 && mode === 'specific' ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">בחרו מבחן עבר — תיגשו לכל שאלותיו לפי הסדר המקורי, בזמן של 3 שעות:</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {papers.map((paper) => {
+                const n = questions.filter((q) => q.examPaper === paper).length
+                return (
+                  <button
+                    key={paper}
+                    onClick={() => startPaper(paper, 180)}
+                    className="gradient-card rounded-3xl p-5 border border-border hover-lift text-right flex items-center gap-3"
+                  >
+                    <div className="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="font-bold font-display">{paper}</div>
+                      <div className="text-xs text-muted-foreground">{n} שאלות · 3 שעות</div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-3 sm:grid-cols-3 mb-6">
+              {PRESETS.map((p) => {
+                const n = p.count === 'all' ? available : Math.min(p.count, available)
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => start(p.count, p.minutes)}
+                    className="gradient-card rounded-3xl p-5 border border-border hover-lift text-center"
+                  >
+                    <div className="text-3xl mb-2">{p.emoji}</div>
+                    <div className="font-bold font-display">{p.label}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{n} שאלות</div>
+                    <div className="text-xs text-muted-foreground">{p.minutes > 0 ? `${p.minutes} דקות` : 'ללא זמן'}</div>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="rounded-3xl border border-border p-5">
+              <div className="font-medium mb-3 flex items-center gap-2"><ListChecks className="w-4 h-4 text-primary" />מבחן מותאם אישית</div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <label className="space-y-1.5">
+                  <span className="text-sm text-muted-foreground">מספר שאלות (1–{available})</span>
+                  <Input
+                    type="number" min={1} max={available} value={customCount}
+                    onChange={(e) => setCustomCount(Math.max(1, Math.min(available, Number(e.target.value) || 1)))}
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-sm text-muted-foreground">דקות (0 = ללא זמן)</span>
+                  <Input
+                    type="number" min={0} max={240} value={customMin}
+                    onChange={(e) => setCustomMin(Math.max(0, Math.min(240, Number(e.target.value) || 0)))}
+                  />
+                </label>
+              </div>
+              <Button onClick={() => start(customCount, customMin)} className="w-full rounded-2xl" size="lg">
+                <Timer className="w-4 h-4 ml-2" />התחל מבחן
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     )
   }

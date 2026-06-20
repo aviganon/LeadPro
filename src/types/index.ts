@@ -90,6 +90,7 @@ export interface Question {
   explanation?: string
   difficulty: 1 | 2 | 3
   kind?: QuestionKind      // 'exam' = שאלת מבחן אמיתית; היעדר/‏'practice' = תרגול
+  examPaper?: string       // מזהה מבחן המקור (למשל "קיץ 2002") — לבחירת מבחן ספציפי
 }
 
 export type GameType = 'quiz' | 'flashcards' | 'memory'
