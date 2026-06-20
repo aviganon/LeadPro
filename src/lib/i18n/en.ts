@@ -39,7 +39,7 @@ export const en: typeof he = {
   'subject.games': 'Games',
   'subject.questions': 'Practice',
   'subject.exam': 'Exam',
-  'subject.guided': 'Guided solution',
+  'subject.guided': 'Calculations',
   'subject.help': 'AI Tutor',
   'subject.leaderboard': 'Leaderboard',
   'subject.studyRef': 'Study reference',

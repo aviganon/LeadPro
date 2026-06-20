@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import * as Icons from 'lucide-react'
-import { ArrowRight, ArrowLeft, Loader2, Gamepad2, FileQuestion, BookOpen, Sparkles, Trophy, Target, ClipboardCheck, Film } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Loader2, Gamepad2, FileQuestion, BookOpen, Sparkles, Trophy, Target, ClipboardCheck, Calculator } from 'lucide-react'
 import { useLocale, pickLang } from '@/context/LocaleContext'
 import { LangToggle } from '@/components/LangToggle'
 import { UserMenu } from '@/components/UserMenu'
@@ -17,7 +17,7 @@ import { AiTutor } from '@/components/AiTutor'
 import { Leaderboard } from '@/components/Leaderboard'
 import { StudyReference } from '@/components/StudyReference'
 import { LearningBackground } from '@/components/LearningBackground'
-import { GuidedSolution } from '@/components/GuidedSolution'
+import { ComputeExercise } from '@/components/ComputeExercise'
 import { GUIDED_SOLUTIONS } from '@/lib/guidedSolutions'
 import { levelTheme } from '@/lib/levelTheme'
 import { getSubjectBySlug, getGames, getQuestions, getMaterials } from '@/lib/db'
@@ -237,7 +237,7 @@ export default function SubjectHub() {
                 <TabsTrigger value="questions" className="flex-1 gap-1.5"><FileQuestion className="w-4 h-4" />{t('subject.questions')}</TabsTrigger>
                 <TabsTrigger value="exam" className="flex-1 gap-1.5"><ClipboardCheck className="w-4 h-4" />{t('subject.exam')}</TabsTrigger>
                 {solutions.length > 0 && (
-                  <TabsTrigger value="guided" className="flex-1 gap-1.5"><Film className="w-4 h-4" />{t('subject.guided')}</TabsTrigger>
+                  <TabsTrigger value="guided" className="flex-1 gap-1.5"><Calculator className="w-4 h-4" />{t('subject.guided')}</TabsTrigger>
                 )}
                 <TabsTrigger value="board" className="flex-1 gap-1.5"><Trophy className="w-4 h-4" />{t('subject.leaderboard')}</TabsTrigger>
                 <TabsTrigger value="help" className="flex-1 gap-1.5"><BookOpen className="w-4 h-4" />{t('subject.help')}</TabsTrigger>
@@ -329,25 +329,30 @@ export default function SubjectHub() {
                 <TabsContent value="guided" className="pt-6">
                   {(() => {
                     const sel = solutions.find((x) => x.id === activeSol)
-                    if (sel) return <GuidedSolution sol={sel} onBack={() => setActiveSol(null)} />
+                    if (sel) return <ComputeExercise sol={sel} onBack={() => setActiveSol(null)} />
                     return (
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {solutions.map((sol) => (
-                          <button
-                            key={sol.id}
-                            onClick={() => setActiveSol(sol.id)}
-                            className="gradient-card rounded-3xl p-5 border border-border hover-lift flex items-start gap-3 text-right"
-                          >
-                            <div className="w-11 h-11 rounded-2xl bg-fun/10 text-fun flex items-center justify-center shrink-0">
-                              <Film className="w-5 h-5" />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-bold font-display">{sol.title}</div>
-                              <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{sol.question}</div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
+                      <>
+                        <p className="text-sm text-muted-foreground mb-4 flex items-center gap-1.5">
+                          <Calculator className="w-4 h-4 text-primary" />פתרו את התרגיל בעצמכם — ואם צריך, יש פתרון מודרך מונפש.
+                        </p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          {solutions.map((sol) => (
+                            <button
+                              key={sol.id}
+                              onClick={() => setActiveSol(sol.id)}
+                              className="gradient-card rounded-3xl p-5 border border-border hover-lift flex items-start gap-3 text-right"
+                            >
+                              <div className="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <Calculator className="w-5 h-5" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-bold font-display">{sol.title}</div>
+                                <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{sol.question}</div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </>
                     )
                   })()}
                 </TabsContent>

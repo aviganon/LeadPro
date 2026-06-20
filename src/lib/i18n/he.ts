@@ -37,7 +37,7 @@ export const he = {
   'subject.games': 'משחקים',
   'subject.questions': 'תרגול',
   'subject.exam': 'מבחן',
-  'subject.guided': 'פתרון מודרך',
+  'subject.guided': 'תרגול חישובי',
   'subject.help': 'מורה פרטי',
   'subject.leaderboard': 'טבלת מנצחים',
   'subject.studyRef': 'חומר עזר לנושא',

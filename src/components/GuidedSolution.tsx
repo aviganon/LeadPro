@@ -14,6 +14,9 @@ export interface GuidedSol {
   id: string
   title: string
   question: string
+  answer: number        // התשובה המספרית הסופית (לבדיקה אוטומטית)
+  unit?: string         // יחידה לתצוגה (למשל "מ'", "טון")
+  tolerance?: number    // סטייה מותרת בבדיקה (ברירת מחדל: 2%)
   steps: SolStep[]
   /** דיאגרמה — מקבלת אילו חלקים פעילים בשלב הנוכחי */
   Diagram: (props: { active: Set<string> }) => React.ReactElement
