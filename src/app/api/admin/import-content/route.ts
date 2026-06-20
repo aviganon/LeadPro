@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       batch.set(ref, {
         subjectId, level: 'student', grade, lang: 'he', type: 'mc',
         prompt: q.prompt, options: q.options, answer: q.answer,
-        explanation: q.explanation ?? '', difficulty: 2,
+        explanation: q.explanation ?? '', difficulty: q.difficulty ?? 2,
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true })
       count++
