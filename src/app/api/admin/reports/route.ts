@@ -63,7 +63,15 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const db = getAdminFirestore()
-    await db.collection('question_reports').doc(id).set({ status }, { merge: true })
+    const ref = db.collection('question_reports').doc(id)
+    await ref.set({ status }, { merge: true })
+    // טיפול בדיווח (resolved) → השאלה חוזרת למאגר
+    if (status === 'resolved') {
+      const qId = (await ref.get()).data()?.questionId as string | undefined
+      if (qId && !qId.startsWith('ai-')) {
+        try { await db.collection('questions').doc(qId).set({ reportedHidden: false }, { merge: true }) } catch { /* ignore */ }
+      }
+    }
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('admin/reports PATCH', e)
@@ -81,7 +89,13 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const db = getAdminFirestore()
-    await db.collection('question_reports').doc(id).delete()
+    const ref = db.collection('question_reports').doc(id)
+    // מחיקת הדיווח → השאלה חוזרת למאגר (אלא אם הוסרה בכוונה דרך ניהול התוכן)
+    const qId = (await ref.get()).data()?.questionId as string | undefined
+    if (qId && !qId.startsWith('ai-')) {
+      try { await db.collection('questions').doc(qId).set({ reportedHidden: false }, { merge: true }) } catch { /* ignore */ }
+    }
+    await ref.delete()
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('admin/reports DELETE', e)

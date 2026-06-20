@@ -137,7 +137,7 @@ export function Quiz({
         <p className="text-xl md:text-2xl font-semibold text-center font-display" dir="auto">{q.prompt}</p>
       </div>
       <div className="flex justify-end mb-4">
-        <ReportQuestionButton questionId={q.id} subjectId={q.subjectId} grade={q.grade} prompt={q.prompt} />
+        <ReportQuestionButton key={q.id} questionId={q.id} subjectId={q.subjectId} grade={q.grade} prompt={q.prompt} />
       </div>
 
       {options.length > 0 ? (

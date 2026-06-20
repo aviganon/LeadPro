@@ -91,6 +91,19 @@ export interface Question {
   difficulty: 1 | 2 | 3
   kind?: QuestionKind      // 'exam' = שאלת מבחן אמיתית; היעדר/‏'practice' = תרגול
   examPaper?: string       // מזהה מבחן המקור (למשל "קיץ 2002") — לבחירת מבחן ספציפי
+  reportedHidden?: boolean // הוסתרה מהמאגר עקב דיווח, עד טיפול הניהול
+}
+
+/** תוצאת מבחן של משתמש רשום (נשמר לפי owner). docId = `${userId}__${subjectId}__${grade}__${paper}` */
+export interface ExamResult {
+  userId: string
+  subjectId: string
+  grade: number
+  paper: string        // 'mixed' או שם מבחן ספציפי
+  bestGrade: number
+  lastGrade: number
+  attempts: number
+  lastAt: Date
 }
 
 export type GameType = 'quiz' | 'flashcards' | 'memory'

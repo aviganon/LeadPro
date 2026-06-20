@@ -5,7 +5,7 @@ import {
 import { db } from './firebase'
 import type {
   User, Subject, Topic, Question, Game, Material, Progress, Level,
-  Institution, Department,
+  Institution, Department, ExamResult,
 } from '@/types'
 
 // ========== COLLECTIONS ==========
@@ -18,6 +18,7 @@ const MATERIALS = 'materials'
 const PROGRESS = 'progress'
 const INSTITUTIONS = 'institutions'
 const DEPARTMENTS = 'departments'
+const EXAM_RESULTS = 'exam_results'
 
 // ========== USERS ==========
 
@@ -138,7 +139,10 @@ export async function getQuestions(subjectId: string, grade: number): Promise<Qu
       where('grade', '==', grade),
     )
   )
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Question))
+  // שאלות שדווחו ועדיין לא טופלו (reportedHidden) מוסתרות מהמשתמשים
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Question))
+    .filter(q => q.reportedHidden !== true)
 }
 
 // ========== GAMES ==========
@@ -183,5 +187,37 @@ export async function saveProgress(p: Progress): Promise<void> {
   await setDoc(doc(db, PROGRESS, `${p.userId}_${p.subjectId}`), {
     ...p,
     lastPlayed: serverTimestamp(),
+  }, { merge: true })
+}
+
+// ========== EXAM RESULTS (logged-in users) ==========
+// docId = `${userId}__${subjectId}__${grade}__${paper}` — owner-scoped, שומר ציון מרבי.
+
+function examResultId(userId: string, subjectId: string, grade: number, paper: string): string {
+  return `${userId}__${subjectId}__${grade}__${paper}`.replace(/[^a-zA-Z0-9_֐-׿.:-]/g, '_')
+}
+
+export async function getExamResults(userId: string, subjectId: string, grade: number): Promise<ExamResult[]> {
+  // שאילתה לפי userId בלבד (בלי אינדקס מורכב) — סינון מקצוע/כיתה בצד הלקוח
+  const snap = await getDocs(query(collection(db, EXAM_RESULTS), where('userId', '==', userId)))
+  return snap.docs
+    .map(d => d.data() as ExamResult)
+    .filter(r => r.subjectId === subjectId && r.grade === grade)
+}
+
+/** שומר/מעדכן תוצאת מבחן למשתמש רשום — שומר את הציון המרבי וסופר נסיונות. */
+export async function saveExamResult(
+  userId: string, subjectId: string, grade: number, paper: string, gradeVal: number,
+): Promise<void> {
+  const ref = doc(db, EXAM_RESULTS, examResultId(userId, subjectId, grade, paper))
+  const snap = await getDoc(ref)
+  const prevBest = snap.exists() ? Number((snap.data() as ExamResult).bestGrade ?? 0) : 0
+  const prevAttempts = snap.exists() ? Number((snap.data() as ExamResult).attempts ?? 0) : 0
+  await setDoc(ref, {
+    userId, subjectId, grade, paper,
+    bestGrade: Math.max(prevBest, gradeVal),
+    lastGrade: gradeVal,
+    attempts: prevAttempts + 1,
+    lastAt: serverTimestamp(),
   }, { merge: true })
 }

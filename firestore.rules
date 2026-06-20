@@ -50,6 +50,12 @@ service cloud.firestore {
         request.auth.uid == progressId.split('_')[0];
     }
 
+    // ========== EXAM RESULTS (logged-in users) ==========
+    // docId = `${userId}__${subjectId}__${grade}__${paper}` — owner-scoped.
+    match /exam_results/{id} {
+      allow read, write: if isAuth() && request.auth.uid == id.split('__')[0];
+    }
+
     // ========== LEADERBOARD ==========
     // קריאה ציבורית (להצגת הטבלה). כתיבה רק דרך השרת (Admin SDK) — שומר ניקוד מרבי ומונע זיוף.
     match /leaderboard/{id} {

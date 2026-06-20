@@ -309,7 +309,7 @@ export default function SubjectHub() {
 
               {/* EXAM — מבחן אמיתי, מתוזמן ומדורג; התוצאה נכנסת לטבלת המנצחים */}
               <TabsContent value="exam" className="pt-6">
-                <Exam questions={examPool} leaderboardScope={examScope} onComplete={onExamComplete} />
+                <Exam questions={examPool} leaderboardScope={examScope} subjectId={subject.id} grade={grade} onComplete={onExamComplete} />
               </TabsContent>
 
               {/* LEADERBOARD — ציוני מבחן בלבד */}

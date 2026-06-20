@@ -43,6 +43,14 @@ export async function POST(req: NextRequest) {
       updatedAt: FieldValue.serverTimestamp(),
       createdAt: FieldValue.serverTimestamp(),
     }, { merge: true })
+
+    // הסתרת השאלה מהמאגר עד טיפול — רק לשאלות אמיתיות (לא שאלות AI זמניות)
+    if (!questionId.startsWith('ai-')) {
+      try {
+        await db.collection('questions').doc(questionId).set({ reportedHidden: true }, { merge: true })
+      } catch { /* ignore — ייתכן שהשאלה אינה במאגר */ }
+    }
+
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('report-question POST', e)
