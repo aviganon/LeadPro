@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import * as Icons from 'lucide-react'
-import { ArrowRight, ArrowLeft, Loader2, Gamepad2, FileQuestion, BookOpen, Sparkles, Trophy, Target, ClipboardCheck } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Loader2, Gamepad2, FileQuestion, BookOpen, Sparkles, Trophy, Target, ClipboardCheck, Film } from 'lucide-react'
 import { useLocale, pickLang } from '@/context/LocaleContext'
 import { LangToggle } from '@/components/LangToggle'
 import { UserMenu } from '@/components/UserMenu'
@@ -17,6 +17,8 @@ import { AiTutor } from '@/components/AiTutor'
 import { Leaderboard } from '@/components/Leaderboard'
 import { StudyReference } from '@/components/StudyReference'
 import { LearningBackground } from '@/components/LearningBackground'
+import { GuidedSolution } from '@/components/GuidedSolution'
+import { GUIDED_SOLUTIONS } from '@/lib/guidedSolutions'
 import { levelTheme } from '@/lib/levelTheme'
 import { getSubjectBySlug, getGames, getQuestions, getMaterials } from '@/lib/db'
 import { examScopeFor } from '@/lib/leaderboard'
@@ -52,6 +54,7 @@ export default function SubjectHub() {
   const [difficulty, setDifficulty] = useState<Difficulty>('all')
   const [progress, setProgress] = useState<SubjectProgress | null>(null)
   const [lbRefresh, setLbRefresh] = useState(0)
+  const [activeSol, setActiveSol] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -132,6 +135,7 @@ export default function SubjectHub() {
   // טבלת המנצחים מציגה ציוני מבחן בלבד
   const examScope = subject ? examScopeFor(subject.id, grade) : ''
   const theme = levelTheme(subject?.level)
+  const solutions = subject?.courseNumber ? GUIDED_SOLUTIONS[subject.courseNumber] ?? [] : []
 
   const onQuizComplete = (correct: number, total: number, score: number) => {
     if (!subject) return
@@ -232,6 +236,9 @@ export default function SubjectHub() {
                 <TabsTrigger value="games" className="flex-1 gap-1.5"><Gamepad2 className="w-4 h-4" />{t('subject.games')}</TabsTrigger>
                 <TabsTrigger value="questions" className="flex-1 gap-1.5"><FileQuestion className="w-4 h-4" />{t('subject.questions')}</TabsTrigger>
                 <TabsTrigger value="exam" className="flex-1 gap-1.5"><ClipboardCheck className="w-4 h-4" />{t('subject.exam')}</TabsTrigger>
+                {solutions.length > 0 && (
+                  <TabsTrigger value="guided" className="flex-1 gap-1.5"><Film className="w-4 h-4" />{t('subject.guided')}</TabsTrigger>
+                )}
                 <TabsTrigger value="board" className="flex-1 gap-1.5"><Trophy className="w-4 h-4" />{t('subject.leaderboard')}</TabsTrigger>
                 <TabsTrigger value="help" className="flex-1 gap-1.5"><BookOpen className="w-4 h-4" />{t('subject.help')}</TabsTrigger>
               </TabsList>
@@ -316,6 +323,35 @@ export default function SubjectHub() {
               <TabsContent value="exam" className="pt-6">
                 <Exam questions={examPool} leaderboardScope={examScope} subjectId={subject.id} grade={grade} onComplete={onExamComplete} />
               </TabsContent>
+
+              {/* GUIDED — פתרונות מודרכים מונפשים לתרגילים חישוביים */}
+              {solutions.length > 0 && (
+                <TabsContent value="guided" className="pt-6">
+                  {(() => {
+                    const sel = solutions.find((x) => x.id === activeSol)
+                    if (sel) return <GuidedSolution sol={sel} onBack={() => setActiveSol(null)} />
+                    return (
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {solutions.map((sol) => (
+                          <button
+                            key={sol.id}
+                            onClick={() => setActiveSol(sol.id)}
+                            className="gradient-card rounded-3xl p-5 border border-border hover-lift flex items-start gap-3 text-right"
+                          >
+                            <div className="w-11 h-11 rounded-2xl bg-fun/10 text-fun flex items-center justify-center shrink-0">
+                              <Film className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold font-display">{sol.title}</div>
+                              <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{sol.question}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  })()}
+                </TabsContent>
+              )}
 
               {/* LEADERBOARD — ציוני מבחן בלבד */}
               <TabsContent value="board" className="pt-6">
