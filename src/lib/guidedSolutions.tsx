@@ -495,8 +495,72 @@ const trussDesign: GuidedSol = {
   ),
 }
 
+// ===== מתכונת כפיפה מלאה — מקורה ועד מאמץ =====
+const bendingFull: GuidedSol = {
+  id: 'bending-full-exam',
+  title: 'מתכונת כפיפה — תרגיל מלא',
+  question: 'קורה פשוטה במוטת 6 מ\' נושאת עומס מפולג אחיד q=2 טון/מ\'. חתך מלבני b=15 ס"מ, h=30 ס"מ. חשב את מאמץ הכפיפה המרבי. (בק"ג/ס"מ²)',
+  answer: 400, unit: 'ק"ג/ס"מ²', tolerance: 3,
+  steps: [
+    { title: 'תגובות הסמכים — עומס סימטרי, כל סמך נושא חצי מהעומס הכולל (q·L).', math: 'R_A = R_B = q·L/2 = 2·6/2 = 6 טון', on: ['beam', 'load', 'react'] },
+    { title: 'דיאגרמת כוח הגזירה: יורדת לינארית מ-+6 ל-−6 ומתאפסת באמצע המוטה.', math: 'Q(אמצע) = 0', on: ['shear'] },
+    { title: 'במקום שבו Q=0 נמצא המומנט המרבי — באמצע המוטה.', math: 'Mmax = q·L²/8 = 2·6²/8 = 9 טון·מ\'', on: ['moment', 'mmax'] },
+    { title: 'ממירים את המומנט ליחידות ק"ג·ס"מ.', math: 'Mmax = 9 טון·מ\' = 900,000 ק"ג·ס"מ', on: ['mmax'] },
+    { title: 'מאפייני החתך המלבני: מומנט אינרציה ומרחק לסיב הקיצוני.', math: 'Ix = b·h³/12 = 15·30³/12 = 33,750 ס"מ⁴ ; y=15', on: ['section'] },
+    { title: 'מאמץ הכפיפה המרבי = מומנט כפול המרחק חלקי מומנט האינרציה.', math: 'σ = M·y/Ix = 900,000·15/33,750 = 400 ק"ג/ס"מ²', on: ['stress'] },
+  ],
+  Diagram: ({ active }) => (
+    <svg viewBox="0 0 640 380" style={{ width: '100%', height: 'auto', display: 'block' }}>
+      {/* קורה + סמכים */}
+      <g style={{ opacity: op(active, 'beam'), transition: 'opacity .4s' }}>
+        <line x1="80" y1="70" x2="360" y2="70" stroke={T} strokeWidth="4" />
+        <polygon points="80,70 68,88 92,88" fill={M} /><polygon points="360,70 348,88 372,88" fill={M} />
+        <text x="220" y="104" textAnchor="middle" fontSize="11" fill={M}>L = 6 מ&#39;</text>
+      </g>
+      <g style={{ opacity: op(active, 'load'), transition: 'opacity .4s' }}>
+        {[0,1,2,3,4,5].map((k) => <line key={k} x1={80 + k * 56} y1="36" x2={80 + k * 56} y2="64" stroke={P} strokeWidth="2" />)}
+        <line x1="80" y1="36" x2="360" y2="36" stroke={P} strokeWidth="2" />
+        <text x="220" y="28" textAnchor="middle" fontSize="12" fill={P} fontWeight="500">q = 2 טון/מ&#39;</text>
+      </g>
+      <g style={{ opacity: op(active, 'react'), transition: 'opacity .4s' }}>
+        <text x="68" y="104" textAnchor="middle" fontSize="11" fill={G} fontWeight="500">6</text>
+        <text x="372" y="104" textAnchor="middle" fontSize="11" fill={G} fontWeight="500">6</text>
+      </g>
+      {/* דיאגרמת גזירה */}
+      <g style={{ opacity: op(active, 'shear'), transition: 'opacity .4s' }}>
+        <line x1="80" y1="160" x2="360" y2="160" stroke={M} strokeWidth="1" />
+        <polygon points="80,160 80,134 360,186 360,160" fill="color-mix(in oklch, var(--primary) 12%, transparent)" stroke={P} strokeWidth="1.5" />
+        <text x="60" y="150" fontSize="11" fill={M}>Q</text>
+        <text x="92" y="130" fontSize="10" fill={P}>+6</text><text x="338" y="200" fontSize="10" fill={P}>−6</text>
+      </g>
+      {/* דיאגרמת מומנט */}
+      <g style={{ opacity: op(active, 'moment'), transition: 'opacity .4s' }}>
+        <line x1="80" y1="230" x2="360" y2="230" stroke={M} strokeWidth="1" />
+        <path d="M 80 230 Q 220 320 360 230" fill="color-mix(in oklch, var(--accent) 12%, transparent)" stroke="var(--accent)" strokeWidth="2" />
+        <text x="60" y="240" fontSize="11" fill={M}>M</text>
+      </g>
+      <g style={{ opacity: op(active, 'mmax'), transition: 'opacity .4s' }}>
+        <line x1="220" y1="230" x2="220" y2="300" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="3 3" />
+        <text x="220" y="338" textAnchor="middle" fontSize="12" fill="var(--accent)" fontWeight="500">Mmax = 9 טון·מ&#39;</text>
+      </g>
+      {/* חתך + מאמץ */}
+      <g style={{ opacity: op(active, 'section'), transition: 'opacity .4s' }}>
+        <rect x="455" y="60" width="60" height="120" fill="none" stroke={M} strokeWidth="1.5" />
+        <text x="485" y="52" textAnchor="middle" fontSize="11" fill={M}>15×30</text>
+        <line x1="445" y1="120" x2="565" y2="120" stroke="var(--accent)" strokeWidth="1.2" strokeDasharray="3 3" />
+      </g>
+      <g style={{ opacity: op(active, 'stress'), transition: 'opacity .4s' }}>
+        <polygon points="565,60 600,60 565,120" fill="color-mix(in oklch, var(--success) 20%, transparent)" stroke={G} strokeWidth="1.5" />
+        <polygon points="565,120 565,180 600,180" fill="color-mix(in oklch, var(--primary) 20%, transparent)" stroke={P} strokeWidth="1.5" />
+        <text x="565" y="208" textAnchor="middle" fontSize="13" fill={P} fontWeight="500">σ = 400</text>
+        <text x="565" y="224" textAnchor="middle" fontSize="10" fill={M}>ק&quot;ג/ס&quot;מ²</text>
+      </g>
+    </svg>
+  ),
+}
+
 /** פתרונות מודרכים לפי מספר קורס. */
 export const GUIDED_SOLUTIONS: Record<string, GuidedSol[]> = {
   '6966': [excavation, walkway, crane, cable],
-  '6902': [centroidT, inertiaT, bendingStress, bendingDesign, buckling, trussJoints, trussDesign],
+  '6902': [centroidT, inertiaT, bendingStress, bendingFull, bendingDesign, buckling, trussJoints, trussDesign],
 }
