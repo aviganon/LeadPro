@@ -160,7 +160,188 @@ const cable: GuidedSol = {
   ),
 }
 
+// ============================================================
+// ===== לימודי מבנים / סטטיקה (קורס 6902) =====
+// חתך T משותף לשלושת הפתרונות הראשונים: אגף עליון 30×10 ס"מ, מתח אנכי 10×30 ס"מ.
+//   A₁ = A₂ = 300 ס"מ²   →   מרכז כובד Yc = 25 ס"מ מהתחתית   →   Ix = 85,000 ס"מ⁴.
+// ============================================================
+
+/** מצייר את חתך ה-T (אגף 30×10 מעל מתח 10×30). סקלה 5px/ס"מ, תחתית ב-y=230. */
+function TSection({ active, mode }: { active: Set<string>; mode: 'centroid' | 'inertia' }) {
+  return (
+    <svg viewBox="0 0 640 270" style={{ width: '100%', height: 'auto', display: 'block' }}>
+      {/* אגף עליון A₁ = 30×10 */}
+      <g style={{ opacity: op(active, 'flange'), transition: 'opacity .4s' }}>
+        <rect x="245" y="30" width="150" height="50" fill="color-mix(in oklch, var(--primary) 18%, transparent)" stroke={P} strokeWidth="2" />
+        <text x="320" y="60" textAnchor="middle" fontSize="13" fill={P} fontWeight="500">A₁ = 30·10 = 300</text>
+      </g>
+      {/* מתח אנכי A₂ = 10×30 */}
+      <g style={{ opacity: op(active, 'web'), transition: 'opacity .4s' }}>
+        <rect x="295" y="80" width="50" height="150" fill="color-mix(in oklch, var(--success) 16%, transparent)" stroke={G} strokeWidth="2" />
+        <text x="320" y="160" textAnchor="middle" fontSize="13" fill={G} fontWeight="500" transform="rotate(90 320 160)">A₂ = 10·30 = 300</text>
+      </g>
+      {/* קו ייחוס תחתון + ציר Y */}
+      <line x1="225" y1="230" x2="430" y2="230" stroke={M} strokeWidth="1.5" strokeDasharray="4 3" />
+      <text x="230" y="246" fontSize="11" fill={M}>בסיס</text>
+      <g style={{ opacity: op(active, 'y1'), transition: 'opacity .4s' }}>
+        <line x1="410" y1="55" x2="410" y2="230" stroke={P} strokeWidth="1.5" />
+        <circle cx="320" cy="55" r="3" fill={P} />
+        <text x="424" y="146" textAnchor="middle" fontSize="12" fill={P} transform="rotate(-90 424 146)">y₁ = 35</text>
+      </g>
+      <g style={{ opacity: op(active, 'y2'), transition: 'opacity .4s' }}>
+        <line x1="265" y1="155" x2="265" y2="230" stroke={G} strokeWidth="1.5" />
+        <circle cx="320" cy="155" r="3" fill={G} />
+        <text x="251" y="192" textAnchor="middle" fontSize="12" fill={G} transform="rotate(-90 251 192)">y₂ = 15</text>
+      </g>
+      <g style={{ opacity: op(active, 'yc'), transition: 'opacity .4s' }}>
+        <line x1="235" y1="105" x2="455" y2="105" stroke="var(--accent)" strokeWidth="2.5" />
+        <text x="470" y="100" textAnchor="middle" fontSize="14" fill="var(--accent)" fontWeight="500">Yc=25</text>
+      </g>
+      {mode === 'inertia' && (
+        <>
+          <g style={{ opacity: op(active, 'd1'), transition: 'opacity .4s' }}>
+            <line x1="360" y1="55" x2="360" y2="105" stroke={P} strokeWidth="2.5" />
+            <text x="385" y="82" textAnchor="middle" fontSize="12" fill={P} fontWeight="500">d₁=10</text>
+          </g>
+          <g style={{ opacity: op(active, 'd2'), transition: 'opacity .4s' }}>
+            <line x1="360" y1="105" x2="360" y2="155" stroke={G} strokeWidth="2.5" />
+            <text x="385" y="135" textAnchor="middle" fontSize="12" fill={G} fontWeight="500">d₂=10</text>
+          </g>
+        </>
+      )}
+    </svg>
+  )
+}
+
+// ===== מרכז כובד של חתך מורכב =====
+const centroidT: GuidedSol = {
+  id: 'centroid-tsection',
+  title: 'מרכז כובד — חתך T מורכב',
+  question: 'חתך T בנוי משני מלבנים: אגף עליון 30×10 ס"מ ומתח אנכי 10×30 ס"מ. מהו המרחק Yc של מרכז הכובד מבסיס החתך?',
+  answer: 25, unit: 'ס"מ', tolerance: 0.3,
+  steps: [
+    { title: 'מחלקים את החתך לשני מלבנים פשוטים ומחשבים את שטח כל אחד.', math: 'A₁ = 30·10 = 300 ;  A₂ = 10·30 = 300 ס"מ²', on: ['flange', 'web'] },
+    { title: 'מוצאים את גובה מרכז הכובד של כל מלבן מהבסיס (התחתית).', math: 'y₁ = 30 + 10/2 = 35 ;  y₂ = 30/2 = 15', on: ['y1', 'y2'] },
+    { title: 'מציבים בנוסחת מרכז הכובד המשוקלל לפי שטחים.', math: 'Yc = (A₁·y₁ + A₂·y₂) / (A₁ + A₂)', on: ['flange', 'web', 'y1', 'y2'] },
+    { title: 'מחשבים — זהו מיקום הציר המרכזי שעליו נחשב בהמשך את מומנט האינרציה.', math: 'Yc = (300·35 + 300·15) / 600 = 25 ס"מ', on: ['yc'] },
+  ],
+  Diagram: ({ active }) => <TSection active={active} mode="centroid" />,
+}
+
+// ===== מומנט אינרציה (משפט הצירים המקבילים) =====
+const inertiaT: GuidedSol = {
+  id: 'inertia-tsection',
+  title: 'מומנט אינרציה — חתך T (צירים מקבילים)',
+  question: 'לאותו חתך T (Yc=25 ס"מ מהבסיס), חשב את מומנט האינרציה Ix סביב הציר המרכזי האופקי. (בס"מ⁴)',
+  answer: 85000, unit: 'ס"מ⁴', tolerance: 200,
+  steps: [
+    { title: 'מומנט האינרציה העצמי של מלבן סביב צירו: I = b·h³/12.', math: 'I₁ = 30·10³/12 = 2500 ;  I₂ = 10·30³/12 = 22500', on: ['flange', 'web'] },
+    { title: 'מרחק מרכז כל מלבן מהציר המרכזי (Yc=25).', math: 'd₁ = |35−25| = 10 ;  d₂ = |15−25| = 10', on: ['d1', 'd2', 'yc'] },
+    { title: 'משפט הצירים המקבילים — מוסיפים לכל מלבן את A·d².', math: 'Ix = Σ(Iᵢ + Aᵢ·dᵢ²)', on: ['flange', 'web', 'd1', 'd2'] },
+    { title: 'אגף: 2500 + 300·10² = 32500.  מתח: 22500 + 300·10² = 52500.', math: 'Ix = 32500 + 52500 = 85000 ס"מ⁴', on: ['yc'] },
+  ],
+  Diagram: ({ active }) => <TSection active={active} mode="inertia" />,
+}
+
+// ===== מאמץ כפיפה — קורה פשוטה בעומס מפולג =====
+const bendingStress: GuidedSol = {
+  id: 'bending-stress',
+  title: 'מאמץ כפיפה — קורה פשוטה',
+  question: 'קורה פשוטה במוטת 6 מ\' נושאת עומס מפולג אחיד q=4 טון/מ\'. חתך הקורה הוא ה-T שלמעלה (Ix=85000 ס"מ⁴, y_max=25 ס"מ). מהו מאמץ הכפיפה המרבי? (בק"ג/ס"מ²)',
+  answer: 529, unit: 'ק"ג/ס"מ²', tolerance: 4,
+  steps: [
+    { title: 'מומנט מרבי בקורה פשוטה עם עומס מפולג אחיד נמצא באמצע המוטה.', math: 'Mmax = q·L²/8', on: ['beam', 'load'] },
+    { title: 'מציבים q=4 טון/מ\' ו-L=6 מ\'.', math: 'Mmax = 4·6²/8 = 18 טון·מ\'', on: ['mdiag', 'mmax'] },
+    { title: 'ממירים ליחידות ק"ג·ס"מ (×1000×100) לצורך חישוב המאמץ.', math: '18 טון·מ\' = 1,800,000 ק"ג·ס"מ', on: ['mmax'] },
+    { title: 'מאמץ הכפיפה: המומנט כפול המרחק לסיב הקיצוני, חלקי מומנט האינרציה.', math: 'σ = Mmax·y_max / Ix', on: ['sec', 'stress'] },
+    { title: 'מחשבים — המאמץ המרבי בסיב התחתון (המרוחק ביותר מהציר המרכזי).', math: 'σ = 1,800,000·25 / 85,000 = 529 ק"ג/ס"מ²', on: ['stress'] },
+  ],
+  Diagram: ({ active }) => (
+    <svg viewBox="0 0 640 300" style={{ width: '100%', height: 'auto', display: 'block' }}>
+      {/* קורה + סמכים */}
+      <g style={{ opacity: op(active, 'beam'), transition: 'opacity .4s' }}>
+        <line x1="70" y1="70" x2="380" y2="70" stroke={T} strokeWidth="4" />
+        <polygon points="70,70 58,90 82,90" fill={M} /><polygon points="380,70 368,90 392,90" fill={M} />
+        <text x="225" y="118" textAnchor="middle" fontSize="12" fill={M}>L = 6 מ&#39;</text>
+        <line x1="70" y1="104" x2="380" y2="104" stroke={M} strokeWidth="1" strokeDasharray="4 3" />
+      </g>
+      {/* עומס מפולג */}
+      <g style={{ opacity: op(active, 'load'), transition: 'opacity .4s' }}>
+        {[0,1,2,3,4,5,6].map((k) => <line key={k} x1={70 + k * 51.6} y1="34" x2={70 + k * 51.6} y2="64" stroke={P} strokeWidth="2" markerEnd="url(#qa)" />)}
+        <line x1="70" y1="34" x2="380" y2="34" stroke={P} strokeWidth="2" />
+        <text x="225" y="26" textAnchor="middle" fontSize="13" fill={P} fontWeight="500">q = 4 טון/מ&#39;</text>
+        <defs><marker id="qa" markerWidth="8" markerHeight="8" refX="4" refY="6" orient="auto"><path d="M1,1 L4,6 L7,1" fill="none" stroke={P} strokeWidth="1.5" /></marker></defs>
+      </g>
+      {/* דיאגרמת מומנטים */}
+      <g style={{ opacity: op(active, 'mdiag'), transition: 'opacity .4s' }}>
+        <line x1="70" y1="150" x2="380" y2="150" stroke={M} strokeWidth="1.5" />
+        <path d="M 70 150 Q 225 250 380 150" fill="color-mix(in oklch, var(--accent) 14%, transparent)" stroke="var(--accent)" strokeWidth="2" />
+      </g>
+      <g style={{ opacity: op(active, 'mmax'), transition: 'opacity .4s' }}>
+        <line x1="225" y1="150" x2="225" y2="232" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="4 3" />
+        <text x="225" y="270" textAnchor="middle" fontSize="13" fill="var(--accent)" fontWeight="500">Mmax = 18 טון·מ&#39;</text>
+      </g>
+      {/* חתך + פילוג מאמצים */}
+      <g style={{ opacity: op(active, 'sec'), transition: 'opacity .4s' }}>
+        <rect x="470" y="40" width="90" height="22" fill="none" stroke={M} strokeWidth="1.5" />
+        <rect x="505" y="62" width="20" height="90" fill="none" stroke={M} strokeWidth="1.5" />
+        <line x1="455" y1="107" x2="575" y2="107" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="3 3" />
+      </g>
+      <g style={{ opacity: op(active, 'stress'), transition: 'opacity .4s' }}>
+        <line x1="575" y1="40" x2="575" y2="152" stroke={P} strokeWidth="1" />
+        <polygon points="575,40 600,40 575,107" fill="color-mix(in oklch, var(--success) 22%, transparent)" stroke={G} strokeWidth="1.5" />
+        <polygon points="575,107 575,152 622,152" fill="color-mix(in oklch, var(--primary) 22%, transparent)" stroke={P} strokeWidth="1.5" />
+        <text x="610" y="172" textAnchor="middle" fontSize="12" fill={P} fontWeight="500">σmax</text>
+        <text x="575" y="190" textAnchor="middle" fontSize="11" fill={M}>y_max=25</text>
+      </g>
+    </svg>
+  ),
+}
+
+// ===== תכן קורה — בחירת מודול התנגדות Wx =====
+const bendingDesign: GuidedSol = {
+  id: 'bending-design',
+  title: 'תכן קורה — מודול התנגדות נדרש',
+  question: 'קורה פשוטה במוטת 4 מ\' נושאת עומס מפולג q=3 טון/מ\'. המאמץ המותר σ=1600 ק"ג/ס"מ². מהו מודול ההתנגדות Wx הנדרש? (בס"מ³)',
+  answer: 375, unit: 'ס"מ³', tolerance: 3,
+  steps: [
+    { title: 'מחשבים תחילה את המומנט המרבי בקורה.', math: 'Mmax = q·L²/8 = 3·4²/8 = 6 טון·מ\'', on: ['beam', 'mmax'] },
+    { title: 'ממירים ליחידות ק"ג·ס"מ.', math: 'Mmax = 6 טון·מ\' = 600,000 ק"ג·ס"מ', on: ['mmax'] },
+    { title: 'מודול ההתנגדות הנדרש = מומנט מרבי חלקי המאמץ המותר.', math: 'Wx = Mmax / σ', on: ['formula'] },
+    { title: 'מחשבים את הדרישה.', math: 'Wx = 600,000 / 1600 = 375 ס"מ³', on: ['result'] },
+    { title: 'בוחרים פרופיל תקני עם Wx גדול או שווה לדרישה — למשל IPN 260 (Wx=442 ס"מ³).', math: 'בחר Wx ≥ 375  →  IPN 260 ✓', on: ['result', 'profile'] },
+  ],
+  Diagram: ({ active }) => (
+    <svg viewBox="0 0 640 240" style={{ width: '100%', height: 'auto', display: 'block' }}>
+      <g style={{ opacity: op(active, 'beam'), transition: 'opacity .4s' }}>
+        <line x1="70" y1="60" x2="340" y2="60" stroke={T} strokeWidth="4" />
+        <polygon points="70,60 58,80 82,80" fill={M} /><polygon points="340,60 328,80 352,80" fill={M} />
+        {[0,1,2,3,4,5].map((k) => <line key={k} x1={70 + k * 54} y1="28" x2={70 + k * 54} y2="56" stroke={P} strokeWidth="2" />)}
+        <line x1="70" y1="28" x2="340" y2="28" stroke={P} strokeWidth="2" />
+        <text x="205" y="20" textAnchor="middle" fontSize="12" fill={P} fontWeight="500">q = 3 טון/מ&#39;</text>
+        <text x="205" y="100" textAnchor="middle" fontSize="11" fill={M}>L = 4 מ&#39;</text>
+      </g>
+      <g style={{ opacity: op(active, 'mmax'), transition: 'opacity .4s' }}>
+        <rect x="120" y="130" width="170" height="30" rx="6" fill="color-mix(in oklch, var(--accent) 14%, transparent)" stroke="var(--accent)" strokeWidth="1.5" />
+        <text x="205" y="151" textAnchor="middle" fontSize="13" fill="var(--accent)" fontWeight="500">Mmax = 6 טון·מ&#39;</text>
+      </g>
+      <g style={{ opacity: op(active, 'formula'), transition: 'opacity .4s' }}>
+        <text x="470" y="60" textAnchor="middle" fontSize="15" fill={T} fontWeight="500">Wx = Mmax / σ</text>
+      </g>
+      <g style={{ opacity: op(active, 'result'), transition: 'opacity .4s' }}>
+        <rect x="395" y="95" width="150" height="40" rx="8" fill="color-mix(in oklch, var(--success) 16%, transparent)" stroke={G} strokeWidth="2" />
+        <text x="470" y="121" textAnchor="middle" fontSize="15" fill={G} fontWeight="500">Wx = 375 ס&quot;מ³</text>
+      </g>
+      <g style={{ opacity: op(active, 'profile'), transition: 'opacity .4s' }}>
+        <rect x="408" y="150" width="124" height="34" rx="6" fill="color-mix(in oklch, var(--primary) 14%, transparent)" stroke={P} strokeWidth="1.5" />
+        <text x="470" y="172" textAnchor="middle" fontSize="13" fill={P} fontWeight="500">IPN 260</text>
+      </g>
+    </svg>
+  ),
+}
+
 /** פתרונות מודרכים לפי מספר קורס. */
 export const GUIDED_SOLUTIONS: Record<string, GuidedSol[]> = {
   '6966': [excavation, walkway, crane, cable],
+  '6902': [centroidT, inertiaT, bendingStress, bendingDesign],
 }
