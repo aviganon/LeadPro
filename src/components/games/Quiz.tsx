@@ -27,6 +27,11 @@ function isCorrectAnswer(q: Question, given: string): boolean {
   return given.trim().toLowerCase() === String(q.answer).trim().toLowerCase()
 }
 
+/** מערבב את סדר האפשרויות כדי שהתשובה הנכונה לא תהיה תמיד באותו מיקום. */
+function withShuffledOptions(q: Question): Question {
+  return q.options && q.options.length > 1 ? { ...q, options: shuffle(q.options) } : q
+}
+
 export function Quiz({
   questions, leaderboardScope, onComplete,
 }: {
@@ -36,7 +41,7 @@ export function Quiz({
 }) {
   const { t } = useLocale()
   const session = useGameSession()
-  const deck = useMemo(() => shuffle(questions), [questions])
+  const deck = useMemo(() => shuffle(questions).map(withShuffledOptions), [questions])
 
   const [idx, setIdx] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)

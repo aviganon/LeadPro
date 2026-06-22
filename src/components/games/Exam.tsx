@@ -39,6 +39,11 @@ function isCorrect(q: Question, given: string | undefined): boolean {
   return given.trim().toLowerCase() === String(q.answer).trim().toLowerCase()
 }
 
+/** מערבב את סדר האפשרויות כדי שהתשובה הנכונה לא תהיה תמיד באותו מיקום. */
+function withShuffledOptions(q: Question): Question {
+  return q.options && q.options.length > 1 ? { ...q, options: shuffle(q.options) } : q
+}
+
 function fmtTime(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000))
   const m = Math.floor(s / 60)
@@ -109,7 +114,7 @@ export function Exam({
 
   const begin = useCallback((d: Question[], minutes: number, paper: string) => {
     const t = Date.now()
-    setDeck(d)
+    setDeck(d.map(withShuffledOptions))
     setAnswers({})
     setFlagged(new Set())
     setIdx(0)
