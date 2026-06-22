@@ -340,8 +340,63 @@ const bendingDesign: GuidedSol = {
   ),
 }
 
+// ===== קריסת עמוד — שיטת ω (אומגה) =====
+const buckling: GuidedSol = {
+  id: 'column-buckling',
+  title: 'קריסת עמוד — בדיקה בשיטת ω',
+  question: 'עמוד פלדה מפרקי-מפרקי באורך 6 מ\' נושא עומס לחיצה N=16 טון. חתך: A=32 ס"מ², I_min=2048 ס"מ⁴. מקדם הקריסה מהטבלה ω=1.41. מהו מאמץ הקריסה? (בק"ג/ס"מ²)',
+  answer: 705, unit: 'ק"ג/ס"מ²', tolerance: 5,
+  steps: [
+    { title: 'אורך הקריסה: עמוד מפרקי-מפרקי → מקדם k=1.', math: 'Le = k·L = 1·6 = 6 מ\' = 600 ס"מ', on: ['col', 'le'] },
+    { title: 'רדיוס הגירציה (היניקה) של החתך סביב הציר החלש.', math: 'i = √(I_min / A) = √(2048/32) = 8 ס"מ', on: ['sect'] },
+    { title: 'תלילות העמוד = אורך הקריסה חלקי רדיוס הגירציה.', math: 'λ = Le / i = 600 / 8 = 75', on: ['lambda'] },
+    { title: 'לפי התלילות λ=75 שולפים מהטבלה את מקדם הקריסה ω.', math: 'ω(75) = 1.41', on: ['omega'] },
+    { title: 'מאמץ הקריסה = ω כפול המאמץ הצירי. משווים למאמץ המותר (1400 ק"ג/ס"מ²).', math: 'σ = ω·N/A = 1.41·16000/32 = 705 < 1400 ✓', on: ['check'] },
+  ],
+  Diagram: ({ active }) => (
+    <svg viewBox="0 0 640 300" style={{ width: '100%', height: 'auto', display: 'block' }}>
+      {/* עומס לחיצה */}
+      <g style={{ opacity: op(active, 'load'), transition: 'opacity .4s' }}>
+        <line x1="200" y1="14" x2="200" y2="46" stroke={P} strokeWidth="3" markerEnd="url(#na)" />
+        <text x="200" y="10" textAnchor="middle" fontSize="13" fill={P} fontWeight="500">N = 16 טון</text>
+        <defs><marker id="na" markerWidth="10" markerHeight="10" refX="5" refY="8" orient="auto"><path d="M1,1 L5,8 L9,1" fill="none" stroke={P} strokeWidth="1.6" /></marker></defs>
+      </g>
+      {/* עמוד + צורת קריסה */}
+      <g style={{ opacity: op(active, 'col'), transition: 'opacity .4s' }}>
+        <line x1="200" y1="48" x2="200" y2="248" stroke={T} strokeWidth="5" />
+        <polygon points="200,248 188,266 212,266" fill={M} /><line x1="184" y1="266" x2="216" y2="266" stroke={M} strokeWidth="2" />
+        <circle cx="200" cy="48" r="5" fill="none" stroke={M} strokeWidth="2" />
+      </g>
+      <g style={{ opacity: op(active, 'le'), transition: 'opacity .4s' }}>
+        <path d="M 200 48 C 250 110 250 186 200 248" fill="none" stroke="var(--accent)" strokeWidth="2" strokeDasharray="5 4" />
+        <line x1="150" y1="48" x2="150" y2="248" stroke="var(--accent)" strokeWidth="1.5" />
+        <text x="135" y="152" textAnchor="middle" fontSize="13" fill="var(--accent)" fontWeight="500" transform="rotate(-90 135 152)">Le = 600 ס&quot;מ</text>
+      </g>
+      {/* חתך */}
+      <g style={{ opacity: op(active, 'sect'), transition: 'opacity .4s' }}>
+        <rect x="360" y="70" width="70" height="44" fill="color-mix(in oklch, var(--success) 14%, transparent)" stroke={G} strokeWidth="1.5" />
+        <text x="395" y="58" textAnchor="middle" fontSize="12" fill={G}>A=32 · I=2048</text>
+        <text x="395" y="98" textAnchor="middle" fontSize="13" fill={G} fontWeight="500">i = 8</text>
+      </g>
+      <g style={{ opacity: op(active, 'lambda'), transition: 'opacity .4s' }}>
+        <rect x="345" y="140" width="120" height="32" rx="6" fill="color-mix(in oklch, var(--primary) 12%, transparent)" stroke={P} strokeWidth="1.5" />
+        <text x="405" y="161" textAnchor="middle" fontSize="14" fill={P} fontWeight="500">λ = 75</text>
+      </g>
+      <g style={{ opacity: op(active, 'omega'), transition: 'opacity .4s' }}>
+        <rect x="345" y="180" width="120" height="32" rx="6" fill="color-mix(in oklch, var(--primary) 12%, transparent)" stroke={P} strokeWidth="1.5" />
+        <text x="405" y="201" textAnchor="middle" fontSize="14" fill={P} fontWeight="500">ω = 1.41</text>
+      </g>
+      <g style={{ opacity: op(active, 'check'), transition: 'opacity .4s' }}>
+        <rect x="500" y="120" width="130" height="44" rx="8" fill="color-mix(in oklch, var(--success) 16%, transparent)" stroke={G} strokeWidth="2" />
+        <text x="565" y="140" textAnchor="middle" fontSize="14" fill={G} fontWeight="500">σ = 705</text>
+        <text x="565" y="156" textAnchor="middle" fontSize="11" fill={G}>&lt; 1400 ✓</text>
+      </g>
+    </svg>
+  ),
+}
+
 /** פתרונות מודרכים לפי מספר קורס. */
 export const GUIDED_SOLUTIONS: Record<string, GuidedSol[]> = {
   '6966': [excavation, walkway, crane, cable],
-  '6902': [centroidT, inertiaT, bendingStress, bendingDesign],
+  '6902': [centroidT, inertiaT, bendingStress, bendingDesign, buckling],
 }
