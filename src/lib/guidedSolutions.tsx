@@ -450,8 +450,53 @@ const trussJoints: GuidedSol = {
   ),
 }
 
+// ===== תכן מוטות מסבך — מתיחה מול לחיצה =====
+const trussDesign: GuidedSol = {
+  id: 'truss-design',
+  title: 'תכן מוטות מסבך — מתיחה ולחיצה',
+  question: 'במסבך, מוטה תחתון נמצא במתיחה N=24 טון. המאמץ המותר σ=1600 ק"ג/ס"מ². מהו שטח החתך הנדרש? (בס"מ²)',
+  answer: 15, unit: 'ס"מ²', tolerance: 0.3,
+  steps: [
+    { title: 'מוטה במתיחה — אין סכנת קריסה. שטח נדרש = הכוח חלקי המאמץ המותר.', math: 'A = N / σ', on: ['tension'] },
+    { title: 'ממירים את הכוח לק"ג ומציבים.', math: 'A = 24,000 / 1600 = 15 ס"מ²', on: ['tension', 'tres'] },
+    { title: 'בוחרים פרופיל תקני עם שטח חתך גדול או שווה לדרישה.', math: 'בחר A ≥ 15 ס"מ²', on: ['tres'] },
+    { title: 'מוטה בלחיצה — שונה! חייבים בדיקת קריסה. דוגמה: N=16 טון, A=32 ס"מ², λ=75 → ω=1.41.', math: 'σ = ω·N/A', on: ['compression'] },
+    { title: 'בלחיצה המאמץ מוגדל ב-ω. בודקים שהוא קטן מהמותר.', math: 'σ = 1.41·16000/32 = 705 < 1600 ✓', on: ['compression', 'cres'] },
+  ],
+  Diagram: ({ active }) => (
+    <svg viewBox="0 0 640 280" style={{ width: '100%', height: 'auto', display: 'block' }}>
+      {/* מסבך סכמטי */}
+      <line x1="90" y1="170" x2="330" y2="170" stroke={M} strokeWidth="2" />
+      <line x1="90" y1="170" x2="210" y2="80" stroke={M} strokeWidth="2" />
+      <line x1="330" y1="170" x2="210" y2="80" stroke={M} strokeWidth="2" />
+      {/* מוטה תחתון — מתיחה */}
+      <g style={{ opacity: op(active, 'tension'), transition: 'opacity .4s' }}>
+        <line x1="90" y1="170" x2="330" y2="170" stroke={G} strokeWidth="5" />
+        <text x="210" y="190" textAnchor="middle" fontSize="13" fill={G} fontWeight="500">מתיחה N=24 טון</text>
+      </g>
+      {/* אלכסון — לחיצה */}
+      <g style={{ opacity: op(active, 'compression'), transition: 'opacity .4s' }}>
+        <line x1="90" y1="170" x2="210" y2="80" stroke={P} strokeWidth="5" />
+        <text x="135" y="115" textAnchor="middle" fontSize="12" fill={P} fontWeight="500" transform="rotate(-37 135 115)">לחיצה N=16</text>
+      </g>
+      {/* תוצאת מתיחה */}
+      <g style={{ opacity: op(active, 'tres'), transition: 'opacity .4s' }}>
+        <rect x="400" y="60" width="200" height="56" rx="8" fill="color-mix(in oklch, var(--success) 14%, transparent)" stroke={G} strokeWidth="2" />
+        <text x="500" y="84" textAnchor="middle" fontSize="13" fill={G}>A = N/σ = 24000/1600</text>
+        <text x="500" y="104" textAnchor="middle" fontSize="15" fill={G} fontWeight="500">A = 15 ס&quot;מ²</text>
+      </g>
+      {/* תוצאת לחיצה */}
+      <g style={{ opacity: op(active, 'cres'), transition: 'opacity .4s' }}>
+        <rect x="400" y="135" width="200" height="56" rx="8" fill="color-mix(in oklch, var(--primary) 12%, transparent)" stroke={P} strokeWidth="2" />
+        <text x="500" y="159" textAnchor="middle" fontSize="13" fill={P}>σ = ω·N/A = 705</text>
+        <text x="500" y="179" textAnchor="middle" fontSize="13" fill={P} fontWeight="500">&lt; 1600 ✓ (תקין)</text>
+      </g>
+    </svg>
+  ),
+}
+
 /** פתרונות מודרכים לפי מספר קורס. */
 export const GUIDED_SOLUTIONS: Record<string, GuidedSol[]> = {
   '6966': [excavation, walkway, crane, cable],
-  '6902': [centroidT, inertiaT, bendingStress, bendingDesign, buckling, trussJoints],
+  '6902': [centroidT, inertiaT, bendingStress, bendingDesign, buckling, trussJoints, trussDesign],
 }
