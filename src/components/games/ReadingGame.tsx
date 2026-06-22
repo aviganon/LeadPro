@@ -30,6 +30,29 @@ function firstLetter(word: string): string {
   return [...base][0] ?? ''
 }
 
+/** מספר האותיות במילה (ללא ניקוד) — בסיס לרמת הקושי. */
+function letterCount(word: string): number {
+  return [...word.replace(/[֑-ׇ]/g, '').trim()].length
+}
+
+const LEVELS: { id: number; label: string }[] = [
+  { id: 0, label: 'הכל' },
+  { id: 1, label: 'קל' },
+  { id: 2, label: 'בינוני' },
+  { id: 3, label: 'קשה' },
+]
+
+/** סינון מילים לפי רמת קושי (אורך): 1 → עד 3 אותיות · 2 → 4 אותיות · 3 → 5+ אותיות.
+ *  נופל בחזרה לכל המילים אם אין מספיק מילים ברמה. */
+function filterByLevel(items: ReadItem[], level: number): ReadItem[] {
+  if (!level) return items
+  const f = items.filter((it) => {
+    const n = letterCount(it.word)
+    return level === 1 ? n <= 3 : level === 2 ? n === 4 : n >= 5
+  })
+  return f.length >= 2 ? f : items
+}
+
 /** הקראת מילה (ללא ניקוד) — תמיכה דפדפנית בלבד, נכשל בשקט אם אין. */
 function speak(word: string) {
   try {
@@ -46,6 +69,7 @@ export function ReadingGame({ mode, categories }: { mode: ReadingMode; categorie
   const { dir } = useLocale()
   const Back = dir === 'rtl' ? ArrowRight : ArrowLeft
   const [catId, setCatId] = useState<string | null>(categories.length === 1 ? categories[0].id : null)
+  const [level, setLevel] = useState(0)
   const category = categories.find((c) => c.id === catId) ?? null
 
   if (categories.length === 0) return null
@@ -73,27 +97,46 @@ export function ReadingGame({ mode, categories }: { mode: ReadingMode; categorie
 
   return (
     <div>
-      {categories.length > 1 && (
-        <Button variant="ghost" size="sm" onClick={() => setCatId(null)} className="mb-3 gap-1">
-          <Back className="w-4 h-4" />נושא אחר
-        </Button>
-      )}
+      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+        {categories.length > 1 ? (
+          <Button variant="ghost" size="sm" onClick={() => setCatId(null)} className="gap-1">
+            <Back className="w-4 h-4" />נושא אחר
+          </Button>
+        ) : <span />}
+        {/* בורר רמת קושי */}
+        <div className="flex items-center gap-1.5" dir="rtl">
+          <span className="text-sm text-muted-foreground">רמה:</span>
+          {LEVELS.map((lv) => (
+            <button
+              key={lv.id}
+              onClick={() => setLevel(lv.id)}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors border ${
+                level === lv.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border hover:border-primary/40'
+              }`}
+            >
+              {lv.label}
+            </button>
+          ))}
+        </div>
+      </div>
       {mode === 'memory'
-        ? <ReadMemory key={category.id} category={category} />
+        ? <ReadMemory key={`${category.id}-${level}`} category={category} level={level} />
         : mode === 'firstletter'
-        ? <ReadFirstLetter key={category.id} category={category} />
-        : <ReadChoose key={`${category.id}-${mode}`} mode={mode} category={category} />}
+        ? <ReadFirstLetter key={`${category.id}-${level}`} category={category} level={level} />
+        : <ReadChoose key={`${category.id}-${mode}-${level}`} mode={mode} category={category} level={level} />}
     </div>
   )
 }
 
 // ===== משחק בחירה: תמונה→מילה או מילה→תמונה =====
-function ReadChoose({ mode, category }: { mode: ReadingMode; category: ReadCategory }) {
+function ReadChoose({ mode, category, level }: { mode: ReadingMode; category: ReadCategory; level: number }) {
   const { t } = useLocale()
   const session = useGameSession()
-  const pool = category.items
+  const pool = category.items // מאגר מלא — לאפשרויות המסיחות
 
-  const deck = useMemo(() => shuffle(pool).slice(0, Math.min(MAX_ROUNDS, pool.length)), [pool])
+  // מילות המטרה מסוננות לפי רמת הקושי; המסיחים נשארים מכל המאגר
+  const targetPool = useMemo(() => filterByLevel(pool, level), [pool, level])
+  const deck = useMemo(() => shuffle(targetPool).slice(0, Math.min(MAX_ROUNDS, targetPool.length)), [targetPool])
 
   // אפשרויות לכל שאלה — מחושב פעם אחת לכל ה-deck
   const rounds = useMemo(() => deck.map((item) => {
@@ -209,10 +252,10 @@ function ReadChoose({ mode, category }: { mode: ReadingMode; category: ReadCateg
 }
 
 // ===== מאיזו אות מתחילה המילה? =====
-function ReadFirstLetter({ category }: { category: ReadCategory }) {
+function ReadFirstLetter({ category, level }: { category: ReadCategory; level: number }) {
   const { t } = useLocale()
   const session = useGameSession()
-  const pool = category.items
+  const pool = useMemo(() => filterByLevel(category.items, level), [category.items, level])
 
   const deck = useMemo(() => shuffle(pool).slice(0, Math.min(MAX_ROUNDS, pool.length)), [pool])
   const rounds = useMemo(() => deck.map((item) => {
@@ -312,19 +355,19 @@ function ReadFirstLetter({ category }: { category: ReadCategory }) {
 // ===== זיכרון: מילה ↔ תמונה =====
 interface MTile { id: number; pairId: number; kind: 'word' | 'emoji'; label: string }
 
-function ReadMemory({ category }: { category: ReadCategory }) {
+function ReadMemory({ category, level }: { category: ReadCategory; level: number }) {
   const { t } = useLocale()
   const session = useGameSession()
 
   const tiles = useMemo<MTile[]>(() => {
-    const items = shuffle(category.items).slice(0, 6)
+    const items = shuffle(filterByLevel(category.items, level)).slice(0, 6)
     const list: MTile[] = []
     items.forEach((it, i) => {
       list.push({ id: i * 2, pairId: i, kind: 'emoji', label: it.emoji })
       list.push({ id: i * 2 + 1, pairId: i, kind: 'word', label: it.word })
     })
     return shuffle(list)
-  }, [category])
+  }, [category, level])
 
   const [flipped, setFlipped] = useState<number[]>([])
   const [matched, setMatched] = useState<number[]>([])
