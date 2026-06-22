@@ -395,8 +395,63 @@ const buckling: GuidedSol = {
   ),
 }
 
+// ===== מסבך — שיטת הצמתים =====
+const trussJoints: GuidedSol = {
+  id: 'truss-joints',
+  title: 'מסבך — שיטת הצמתים',
+  question: 'מסבך משולש: מוטה תחתון באורך 8 מ\', גובה 3 מ\' (אלכסונים ביחס 3-4-5). כוח P=12 טון מופעל כלפי מטה בקודקוד. מהו הכוח במוטה אלכסוני? (בטון)',
+  answer: 10, unit: 'טון', tolerance: 0.2,
+  steps: [
+    { title: 'בדיקת קביעות סטטית: 3 צמתים, 3 מוטות, 3 תגובות. 2j = m+R → 6=6, המבנה קָבוּעַ ופָתִיר.', math: '2·3 = 3 + 3 = 6 ✓', on: ['truss'] },
+    { title: 'תגובות הסמכים — לפי סימטריה כל סמך נושא חצי מהעומס.', math: 'Ay = By = P/2 = 6 טון', on: ['react'] },
+    { title: 'צומת הקודקוד: שני אלכסונים תומכים בעומס. שיווי משקל אנכי (sinθ = 3/5 = 0.6).', math: 'ΣFy: 2·F·sinθ = P', on: ['jointC', 'member-ac'] },
+    { title: 'מחלצים את הכוח באלכסון — לחיצה (המוטה נדחס).', math: 'F = P/(2·sinθ) = 12/(2·0.6) = 10 טון', on: ['member-ac'] },
+    { title: 'צומת הסמך: שיווי משקל אופקי נותן את המוטה התחתון — מתיחה (cosθ=0.8).', math: 'F_תחתון = F·cosθ = 10·0.8 = 8 טון (מתיחה)', on: ['jointA', 'member-ab'] },
+  ],
+  Diagram: ({ active }) => (
+    <svg viewBox="0 0 640 300" style={{ width: '100%', height: 'auto', display: 'block' }}>
+      {/* מסבך */}
+      <g style={{ opacity: op(active, 'truss'), transition: 'opacity .4s' }}>
+        <line x1="120" y1="230" x2="440" y2="230" stroke={T} strokeWidth="3" />
+        <line x1="120" y1="230" x2="280" y2="110" stroke={T} strokeWidth="3" />
+        <line x1="440" y1="230" x2="280" y2="110" stroke={T} strokeWidth="3" />
+        <polygon points="120,230 108,250 132,250" fill={M} />
+        <circle cx="440" cy="242" r="6" fill="none" stroke={M} strokeWidth="2" /><line x1="426" y1="250" x2="454" y2="250" stroke={M} strokeWidth="2" />
+        <text x="112" y="225" fontSize="12" fill={M}>A</text><text x="446" y="225" fontSize="12" fill={M}>B</text><text x="284" y="106" fontSize="12" fill={M}>C</text>
+      </g>
+      {/* עומס */}
+      <g style={{ opacity: op(active, 'jointC'), transition: 'opacity .4s' }}>
+        <line x1="280" y1="72" x2="280" y2="106" stroke={P} strokeWidth="3" markerEnd="url(#pa)" />
+        <text x="280" y="66" textAnchor="middle" fontSize="13" fill={P} fontWeight="500">P = 12 טון</text>
+        <defs><marker id="pa" markerWidth="10" markerHeight="10" refX="5" refY="8" orient="auto"><path d="M1,1 L5,8 L9,1" fill="none" stroke={P} strokeWidth="1.6" /></marker></defs>
+      </g>
+      {/* תגובות */}
+      <g style={{ opacity: op(active, 'react'), transition: 'opacity .4s' }}>
+        <line x1="120" y1="278" x2="120" y2="252" stroke={G} strokeWidth="2.5" markerEnd="url(#ra)" />
+        <line x1="440" y1="278" x2="440" y2="256" stroke={G} strokeWidth="2.5" markerEnd="url(#ra)" />
+        <text x="120" y="294" textAnchor="middle" fontSize="12" fill={G} fontWeight="500">6 טון</text>
+        <text x="440" y="294" textAnchor="middle" fontSize="12" fill={G} fontWeight="500">6 טון</text>
+        <defs><marker id="ra" markerWidth="10" markerHeight="10" refX="5" refY="2" orient="auto"><path d="M1,9 L5,2 L9,9" fill="none" stroke={G} strokeWidth="1.6" /></marker></defs>
+      </g>
+      {/* מוטה אלכסוני */}
+      <g style={{ opacity: op(active, 'member-ac'), transition: 'opacity .4s' }}>
+        <line x1="120" y1="230" x2="280" y2="110" stroke="var(--accent)" strokeWidth="5" />
+        <text x="178" y="158" textAnchor="middle" fontSize="13" fill="var(--accent)" fontWeight="500" transform="rotate(-37 178 158)">10 טון (לחיצה)</text>
+      </g>
+      {/* מוטה תחתון */}
+      <g style={{ opacity: op(active, 'jointA'), transition: 'opacity .4s' }}>
+        <circle cx="120" cy="230" r="7" fill="none" stroke={P} strokeWidth="2" />
+      </g>
+      <g style={{ opacity: op(active, 'member-ab'), transition: 'opacity .4s' }}>
+        <line x1="120" y1="230" x2="440" y2="230" stroke={P} strokeWidth="5" />
+        <text x="280" y="248" textAnchor="middle" fontSize="13" fill={P} fontWeight="500">8 טון (מתיחה)</text>
+      </g>
+    </svg>
+  ),
+}
+
 /** פתרונות מודרכים לפי מספר קורס. */
 export const GUIDED_SOLUTIONS: Record<string, GuidedSol[]> = {
   '6966': [excavation, walkway, crane, cable],
-  '6902': [centroidT, inertiaT, bendingStress, bendingDesign, buckling],
+  '6902': [centroidT, inertiaT, bendingStress, bendingDesign, buckling, trussJoints],
 }
