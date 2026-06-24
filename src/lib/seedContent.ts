@@ -76,6 +76,16 @@ function mathQuestions(grade: number): Q[] {
     for (let i = 0; i < 1; i++) { const money = pick([50, 100]), cost = rnd(12, 45); add(`לדנה ${money} ₪ והיא קנתה משחק ב-${cost} ₪. כמה עודף היא קיבלה?`, money - cost, 2, `${money} − ${cost}`) }
     for (let i = 0; i < 2; i++) { const a = rnd(15, 40), b = rnd(10, 30), g = pick([2, 5]); const tot = a + b; if (tot % g === 0) add(`בחנות ${a} תפוחים ו-${b} אגסים. ארזו את כל הפירות שווה ב-${g} ארגזים. כמה פירות בכל ארגז?`, tot / g, 3, `(${a}+${b}) ÷ ${g}`); else i-- }
     for (let i = 0; i < 1; i++) { const d = pick([100, 150, 200, 250]), n = rnd(3, 6); add(`אורך הקפה אחת של המסלול ${d} מטר. כמה מטר רץ דני ב-${n} הקפות?`, d * n, 3, `${d} × ${n}`) }
+    // סבב נוסף — חשבון רב-ספרתי, מידות וזמן, ובעיות מילוליות
+    for (let i = 0; i < 2; i++) { const a = rnd(200, 900), b = rnd(100, 500); add(`כמה זה ${a} + ${b}?`, a + b, 2) }
+    for (let i = 0; i < 2; i++) { const a = rnd(400, 999), b = rnd(100, 399); add(`כמה זה ${a} − ${b}?`, a - b, 2) }
+    for (let i = 0; i < 2; i++) { const a = rnd(100, 400), b = rnd(2, 5); add(`כמה זה ${a} × ${b}?`, a * b, 3, `${a} × ${b}`) }
+    for (let i = 0; i < 1; i++) { const pages = rnd(8, 15), days = rnd(3, 6); add(`דנה קוראת ${pages} עמודים בכל יום. כמה עמודים תקרא ב-${days} ימים?`, pages * days, 2, `${pages} × ${days}`) }
+    for (let i = 0; i < 1; i++) { const each = pick([6, 12]), boxes = rnd(3, 8); const total = each * boxes; add(`${total} עוגיות נארזו ${each} בכל קופסה. כמה קופסאות יצאו?`, boxes, 2, `${total} ÷ ${each}`) }
+    for (let i = 0; i < 1; i++) { const h = rnd(2, 5); add(`כמה דקות יש ב-${h} שעות? (שעה = 60 דקות)`, h * 60, 2, `${h} × 60`) }
+    for (let i = 0; i < 1; i++) { const m = rnd(2, 8); add(`כמה סנטימטרים יש ב-${m} מטרים? (מטר = 100 ס"מ)`, m * 100, 2, `${m} × 100`) }
+    for (let i = 0; i < 1; i++) { const kg = rnd(2, 9); add(`כמה גרם יש ב-${kg} ק"ג? (ק"ג = 1000 גרם)`, kg * 1000, 3, `${kg} × 1000`) }
+    for (let i = 0; i < 2; i++) { const start = rnd(20, 50), more = rnd(10, 30), used = rnd(5, 18); add(`לתום ${start} גולות. הוא קיבל עוד ${more} ואיבד ${used}. כמה גולות נשארו לו?`, start + more - used, 3, `${start}+${more}−${used}`) }
   } else if (grade === 5) {
     for (let i = 0; i < 3; i++) { const a = rnd(6, 12), b = rnd(4, 12); add(`כמה זה ${a} × ${b}?`, a * b, 1) }
     for (let i = 0; i < 3; i++) { const d = pick([2, 4, 5, 10]); const k = rnd(1, d - 1); add(`כמה זה ${k}/${d} + ${k}/${d}? (כתבו את המונה אם המכנה ${d})`, 2 * k, 2, `מחברים מונים: ${k}+${k}`) }
