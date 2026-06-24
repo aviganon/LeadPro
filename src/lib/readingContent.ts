@@ -48,6 +48,12 @@ export const READING_CATEGORIES: ReadCategory[] = [
       { word: 'טַוָּס', emoji: '🦚' },
       { word: 'דּוֹלְפִין', emoji: '🐬' },
       { word: 'לִוְיָתָן', emoji: '🐳' },
+      { word: 'קוֹאָלָה', emoji: '🐨' },
+      { word: 'פַּנְדָּה', emoji: '🐼' },
+      { word: 'עַקְרָב', emoji: '🦂' },
+      { word: 'לְטָאָה', emoji: '🦎' },
+      { word: 'תַּנִּין', emoji: '🐊' },
+      { word: 'גּוֹרִילָה', emoji: '🦍' },
     ],
   },
   {
@@ -88,6 +94,11 @@ export const READING_CATEGORIES: ReadCategory[] = [
       { word: 'פּוֹפְּקוֹרְן', emoji: '🍿' },
       { word: 'בָּשָׂר', emoji: '🍖' },
       { word: 'נַקְנִיק', emoji: '🌭' },
+      { word: 'סָלָט', emoji: '🥗' },
+      { word: 'פַּסְטָה', emoji: '🍝' },
+      { word: 'אוֹרֶז', emoji: '🍚' },
+      { word: 'סוּשִׁי', emoji: '🍣' },
+      { word: 'טָאקוֹ', emoji: '🌮' },
     ],
   },
   {
@@ -145,6 +156,9 @@ export const READING_CATEGORIES: ReadCategory[] = [
       { word: 'מִדְבָּר', emoji: '🏜️' },
       { word: 'בַּרְקָן', emoji: '🌋' },
       { word: 'עָלֶה', emoji: '🍃' },
+      { word: 'בָּרָק', emoji: '⚡' },
+      { word: 'טוֹרְנָדוֹ', emoji: '🌪️' },
+      { word: 'עֲרָפֶל', emoji: '🌫️' },
     ],
   },
   {
@@ -257,6 +271,18 @@ export const READING_CATEGORIES: ReadCategory[] = [
       { word: 'כִּנּוֹר', emoji: '🎻' },
       { word: 'מִיקְרוֹפוֹן', emoji: '🎤' },
       { word: 'אָזְנִיּוֹת', emoji: '🎧' },
+    ],
+  },
+  {
+    id: 'emotions', name: 'רְגָשׁוֹת', emoji: '😊',
+    items: [
+      { word: 'שָׂמֵחַ', emoji: '😀' },
+      { word: 'עָצוּב', emoji: '😢' },
+      { word: 'כּוֹעֵס', emoji: '😠' },
+      { word: 'מֻפְתָּע', emoji: '😮' },
+      { word: 'מְפַחֵד', emoji: '😨' },
+      { word: 'אוֹהֵב', emoji: '😍' },
+      { word: 'צוֹחֵק', emoji: '😂' },
     ],
   },
 ]

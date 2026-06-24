@@ -86,6 +86,15 @@ function mathQuestions(grade: number): Q[] {
     for (let i = 0; i < 1; i++) { const m = rnd(2, 8); add(`כמה סנטימטרים יש ב-${m} מטרים? (מטר = 100 ס"מ)`, m * 100, 2, `${m} × 100`) }
     for (let i = 0; i < 1; i++) { const kg = rnd(2, 9); add(`כמה גרם יש ב-${kg} ק"ג? (ק"ג = 1000 גרם)`, kg * 1000, 3, `${kg} × 1000`) }
     for (let i = 0; i < 2; i++) { const start = rnd(20, 50), more = rnd(10, 30), used = rnd(5, 18); add(`לתום ${start} גולות. הוא קיבל עוד ${more} ואיבד ${used}. כמה גולות נשארו לו?`, start + more - used, 3, `${start}+${more}−${used}`) }
+    // סבב נוסף — שברים פשוטים, מספר חסר, וכפל דו-ספרתי
+    for (let i = 0; i < 1; i++) { const q = pick([4, 8, 12, 20, 40, 100]); add(`כמה זה רבע מ-${q}? (¼)`, q / 4, 2, `${q} ÷ 4`) }
+    for (let i = 0; i < 1; i++) { const q = pick([6, 9, 12, 30, 60, 90]); add(`כמה זה שליש מ-${q}? (⅓)`, q / 3, 3, `${q} ÷ 3`) }
+    for (let i = 0; i < 1; i++) { const a = rnd(30, 70), s = rnd(90, 160); if (s > a) add(`${a} + ⬜ = ${s}. מהו המספר החסר?`, s - a, 2); else i-- }
+    for (let i = 0; i < 1; i++) { const f = rnd(3, 9), p = f * rnd(3, 9); add(`⬜ × ${f} = ${p}. מהו המספר החסר?`, p / f, 3, `${p} ÷ ${f}`) }
+    for (let i = 0; i < 2; i++) { const a = rnd(11, 20), b = rnd(11, 20); add(`כמה זה ${a} × ${b}?`, a * b, 3, `${a} × ${b}`) }
+    for (let i = 0; i < 1; i++) { const n = rnd(18, 30), m = pick([2, 3, 4]); add(`בכיתה ${n} תלמידים וכל אחד צריך ${m} מחברות. כמה מחברות צריך בסך הכול?`, n * m, 2, `${n} × ${m}`) }
+    for (let i = 0; i < 1; i++) { const cap = pick([40, 45, 50]), buses = rnd(3, 6); add(`אוטובוס מסיע ${cap} נוסעים. כמה נוסעים ב-${buses} אוטובוסים מלאים?`, cap * buses, 2, `${cap} × ${buses}`) }
+    for (let i = 0; i < 1; i++) { const start = pick([100, 200]), p = pick([15, 20, 25]), k = rnd(2, 4); const cost = p * k; if (cost < start) add(`לרינה ${start} ₪. היא קנתה ${k} ספרים ב-${p} ₪ כל אחד. כמה כסף נשאר לה?`, start - cost, 3, `${start} − ${p}×${k}`); else i-- }
   } else if (grade === 5) {
     for (let i = 0; i < 3; i++) { const a = rnd(6, 12), b = rnd(4, 12); add(`כמה זה ${a} × ${b}?`, a * b, 1) }
     for (let i = 0; i < 3; i++) { const d = pick([2, 4, 5, 10]); const k = rnd(1, d - 1); add(`כמה זה ${k}/${d} + ${k}/${d}? (כתבו את המונה אם המכנה ${d})`, 2 * k, 2, `מחברים מונים: ${k}+${k}`) }
