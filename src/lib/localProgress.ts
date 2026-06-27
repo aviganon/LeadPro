@@ -84,6 +84,12 @@ export function getGamesDone(): number {
   if (typeof window === 'undefined') return 0
   try { return Number(window.localStorage.getItem(GAMES_KEY)) || 0 } catch { return 0 }
 }
+/** קובע את ארנק הכוכבים המקומי (לסנכרון מהשרת בכניסה למערכת). */
+export function setStars(total: number) {
+  if (typeof window === 'undefined') return
+  try { window.localStorage.setItem(STARS_KEY, String(Math.max(0, Math.round(total)))) } catch { /* ignore */ }
+}
+
 /** מוסיף נקודות לארנק הכוכבים המצטבר ומחזיר את הסך החדש. נקרא בסיום כל משחק. */
 export function addStars(n: number): number {
   if (typeof window === 'undefined') return 0

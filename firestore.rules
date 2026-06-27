@@ -18,7 +18,8 @@ service cloud.firestore {
     }
 
     function validUserWrite() {
-      let allowed = ['name', 'email', 'updatedAt'];
+      // משתמש יכול לעדכן את פרטיו ואת ארנק הכוכבים שלו (גיימיפיקציה אישית)
+      let allowed = ['name', 'email', 'updatedAt', 'stars', 'gamesDone'];
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
     }
 

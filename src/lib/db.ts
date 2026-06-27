@@ -1,6 +1,6 @@
 import {
   collection, doc, getDoc, getDocs, setDoc, updateDoc,
-  query, where, orderBy, serverTimestamp,
+  query, where, orderBy, serverTimestamp, increment,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type {
@@ -45,6 +45,16 @@ export async function createUser(userId: string, data: Omit<User, 'id'>): Promis
 export async function updateUser(userId: string, data: Partial<User>): Promise<void> {
   await updateDoc(doc(db, USERS, userId), {
     ...data,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+/** הגדלה אטומית של ארנק הכוכבים של המשתמש (מסונכרן בין מכשירים). */
+export async function incrementUserStars(userId: string, stars: number, games = 1): Promise<void> {
+  if (stars <= 0 && games <= 0) return
+  await updateDoc(doc(db, USERS, userId), {
+    stars: increment(Math.max(0, Math.round(stars))),
+    gamesDone: increment(Math.max(0, Math.round(games))),
     updatedAt: serverTimestamp(),
   })
 }

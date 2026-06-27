@@ -13,6 +13,8 @@ export interface User {
   updatedAt: Date
   stripeCustomerId?: string
   isActive: boolean
+  stars?: number       // ארנק כוכבים מצטבר (נשמר לחשבון, מסונכרן בין מכשירים)
+  gamesDone?: number   // מספר משחקים שהושלמו
 }
 
 // ========== LEARNING DOMAIN ==========

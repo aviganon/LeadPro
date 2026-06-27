@@ -6,6 +6,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { LocaleProvider } from '@/context/LocaleContext'
 import { SessionSync } from '@/components/SessionSync'
 import { PresenceTracker } from '@/components/PresenceTracker'
+import { StarsSync } from '@/components/StarsSync'
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants'
 
 const geistSans = Geist({
@@ -65,6 +66,7 @@ export default function RootLayout({
           <AuthProvider>
             <SessionSync />
             <PresenceTracker />
+            <StarsSync />
             {children}
             <Toaster richColors position="top-center" closeButton />
           </AuthProvider>

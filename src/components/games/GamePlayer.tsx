@@ -7,6 +7,8 @@ import { ReadingGame, type ReadingMode } from './ReadingGame'
 import type { ReadCategory } from '@/lib/readingContent'
 import type { Game, Question } from '@/types'
 import { addStars, addQuizResult } from '@/lib/localProgress'
+import { incrementUserStars } from '@/lib/db'
+import { useAuth } from '@/context/AuthContext'
 
 /**
  * מציג משחק לפי הסוג שלו. תצורת המשחק נשמרת ב-game.config:
@@ -16,11 +18,14 @@ import { addStars, addQuizResult } from '@/lib/localProgress'
  */
 export function GamePlayer({ game, questionBank }: { game: Game; questionBank: Question[] }) {
   const config = game.config ?? {}
+  const { user } = useAuth()
 
-  // סיום משחק → צובר נקודות לארנק הכוכבים המתמשך + מעדכן התקדמות במקצוע
+  // סיום משחק → צובר נקודות לארנק הכוכבים המתמשך + מעדכן התקדמות במקצוע.
+  // אם המשתמש מחובר — מסנכרן את הכוכבים גם לחשבון ב-Firestore (נשמר בין מכשירים).
   const finish = (correct: number, total: number, score: number) => {
     addStars(score)
     if (game.subjectId) addQuizResult(game.subjectId, correct, total, score)
+    if (user && score > 0) void incrementUserStars(user.id, score, 1).catch(() => { /* offline — נשמר מקומית */ })
   }
 
   if (game.type === 'flashcards') {
