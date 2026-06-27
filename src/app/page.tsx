@@ -9,7 +9,7 @@ import { LangToggle } from '@/components/LangToggle'
 import { UserMenu } from '@/components/UserMenu'
 import { LearningBackground } from '@/components/LearningBackground'
 import { LEVEL_THEME } from '@/lib/levelTheme'
-import { getGlobalStats } from '@/lib/localProgress'
+import { getGlobalStats, getStars } from '@/lib/localProgress'
 import { LEVELS, APP_LOGO, APP_NAME } from '@/lib/constants'
 import {
   Gamepad2, Sparkles, GraduationCap, ArrowLeft, ArrowRight, FileQuestion,
@@ -75,7 +75,7 @@ function Navbar() {
   const [points, setPoints] = useState(0)
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration read from localStorage
-  useEffect(() => { setPoints(getGlobalStats().points) }, [])
+  useEffect(() => { setPoints(getStars() + getGlobalStats().points) }, [])
 
   return (
     <nav className="fixed top-0 inset-x-0 z-50 glass">
@@ -124,7 +124,7 @@ export default function HomePage() {
   // התקדמות אישית (עובד גם בלי הרשמה)
   const [stats, setStats] = useState({ points: 0, answered: 0, subjects: 0 })
   // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration read from localStorage
-  useEffect(() => { setStats(getGlobalStats()) }, [])
+  useEffect(() => { const g = getGlobalStats(); setStats({ ...g, points: getStars() + g.points }) }, [])
   const hasProgress = stats.answered > 0 || stats.subjects > 0
 
   const features: { icon: LucideIcon; title: string; desc: string; color: string }[] = [

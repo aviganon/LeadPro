@@ -6,6 +6,7 @@ import { Memory, type MemoryPair } from './Memory'
 import { ReadingGame, type ReadingMode } from './ReadingGame'
 import type { ReadCategory } from '@/lib/readingContent'
 import type { Game, Question } from '@/types'
+import { addStars, addQuizResult } from '@/lib/localProgress'
 
 /**
  * מציג משחק לפי הסוג שלו. תצורת המשחק נשמרת ב-game.config:
@@ -15,6 +16,12 @@ import type { Game, Question } from '@/types'
  */
 export function GamePlayer({ game, questionBank }: { game: Game; questionBank: Question[] }) {
   const config = game.config ?? {}
+
+  // סיום משחק → צובר נקודות לארנק הכוכבים המתמשך + מעדכן התקדמות במקצוע
+  const finish = (correct: number, total: number, score: number) => {
+    addStars(score)
+    if (game.subjectId) addQuizResult(game.subjectId, correct, total, score)
+  }
 
   if (game.type === 'flashcards') {
     const cards = (config.cards as FlashCard[] | undefined) ?? []
@@ -29,12 +36,12 @@ export function GamePlayer({ game, questionBank }: { game: Game; questionBank: Q
   if (game.type === 'reading') {
     const mode = (config.mode as ReadingMode | undefined) ?? 'pic2word'
     const categories = (config.categories as ReadCategory[] | undefined) ?? []
-    return <ReadingGame mode={mode} categories={categories} />
+    return <ReadingGame mode={mode} categories={categories} onComplete={finish} />
   }
 
   // quiz (default)
   const questions = (config.questions as Question[] | undefined)?.length
     ? (config.questions as Question[])
     : questionBank
-  return <Quiz questions={questions} />
+  return <Quiz questions={questions} onComplete={finish} />
 }

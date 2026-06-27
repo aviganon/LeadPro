@@ -72,6 +72,29 @@ export function readinessFromExam(p: SubjectProgress): boolean {
   return p.examsTaken > 0
 }
 
+// ===== ארנק כוכבים מצטבר — נצבר על פני כל המשחקים והסבבים (לא מתאפס) =====
+const STARS_KEY = 'apex_stars'
+const GAMES_KEY = 'apex_games_done'
+
+export function getStars(): number {
+  if (typeof window === 'undefined') return 0
+  try { return Number(window.localStorage.getItem(STARS_KEY)) || 0 } catch { return 0 }
+}
+export function getGamesDone(): number {
+  if (typeof window === 'undefined') return 0
+  try { return Number(window.localStorage.getItem(GAMES_KEY)) || 0 } catch { return 0 }
+}
+/** מוסיף נקודות לארנק הכוכבים המצטבר ומחזיר את הסך החדש. נקרא בסיום כל משחק. */
+export function addStars(n: number): number {
+  if (typeof window === 'undefined') return 0
+  const total = getStars() + Math.max(0, Math.round(n))
+  try {
+    window.localStorage.setItem(STARS_KEY, String(total))
+    window.localStorage.setItem(GAMES_KEY, String(getGamesDone() + 1))
+  } catch { /* ignore */ }
+  return total
+}
+
 /** סיכום גלובלי על פני כל המקצועות — לתצוגה במסך הבית. */
 export function getGlobalStats(): { points: number; answered: number; subjects: number } {
   const s = read()

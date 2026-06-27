@@ -1,14 +1,82 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, X, RotateCcw, ArrowLeft, ArrowRight, Volume2 } from 'lucide-react'
+import { Check, X, RotateCcw, ArrowLeft, ArrowRight, Volume2, Star, Flame, Sparkles } from 'lucide-react'
 import { useLocale } from '@/context/LocaleContext'
-import { useGameSession } from '@/hooks/useGameSession'
+import { useGameSession, type GameSession } from '@/hooks/useGameSession'
 import { Button } from '@/components/ui/button'
-import { Scoreboard } from './Scoreboard'
 import { WordImage } from './WordImage'
 import { burstConfetti } from '@/lib/confetti'
+import { getStars } from '@/lib/localProgress'
 import type { ReadCategory, ReadItem } from '@/lib/readingContent'
+
+export interface ReadingDone { (correct: number, total: number, score: number): void }
+
+/** מחמאות אקראיות — חיזוק חיובי לכיתה א'. */
+const PRAISE = ['כָּל הַכָּבוֹד!', 'מְעוּלֶה!', 'אַלּוּף/ה!', 'וָואו!', 'מַדְהִים!', 'יָפֶה מְאוֹד!', 'מָמָשׁ טוֹב!', 'אֵיזֶה כֵּיף!']
+function praise() { return PRAISE[Math.floor(Math.random() * PRAISE.length)] }
+
+/** כותרת ניקוד גדולה וידידותית לילדים: ניקוד המשחק, רצף, וארנק הכוכבים המצטבר. */
+function KidHeader({ session, wallet }: { session: GameSession; wallet: number }) {
+  return (
+    <div className="flex items-center justify-center gap-2.5 mb-4 flex-wrap" dir="rtl">
+      <div className="flex items-center gap-2 px-5 py-2.5 rounded-3xl bg-primary/10 text-primary">
+        <Star className="w-7 h-7 fill-current" />
+        <span className="text-3xl font-extrabold font-display tabular-nums">{session.score}</span>
+      </div>
+      {session.streak > 1 && (
+        <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-3xl bg-fun/10 text-fun animate-pop">
+          <Flame className="w-6 h-6 fill-current" />
+          <span className="text-2xl font-bold tabular-nums">{session.streak}</span>
+        </div>
+      )}
+      <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-3xl bg-amber-400/15 text-amber-500" title="כל הכוכבים שצברת">
+        <Sparkles className="w-6 h-6" />
+        <span className="text-xl font-bold tabular-nums">{wallet + session.score}</span>
+      </div>
+    </div>
+  )
+}
+
+/** נקודות התקדמות: מה כבר ענינו ומה נשאר. */
+function ProgressDots({ total, current }: { total: number; current: number }) {
+  return (
+    <div className="flex items-center justify-center gap-1.5 flex-wrap mb-5" dir="ltr">
+      {Array.from({ length: total }).map((_, i) => (
+        <span
+          key={i}
+          className={`rounded-full transition-all duration-300 ${
+            i < current ? 'bg-success w-3 h-3' : i === current ? 'bg-primary w-4 h-4 ring-4 ring-primary/20' : 'bg-muted w-3 h-3'
+          }`}
+        />
+      ))}
+      <span className="text-sm text-muted-foreground mr-1.5">נשארו {Math.max(0, total - current)}</span>
+    </div>
+  )
+}
+
+/** מסך סיום חגיגי משותף — מחמאה, כוכבי המשחק, וסך הכוכבים המצטבר. */
+function DoneScreen({ message, score, correct, total, wallet, onRestart }: { message: string; score: number; correct: number; total: number; wallet: number; onRestart: () => void }) {
+  const { t } = useLocale()
+  return (
+    <div className="text-center py-8 animate-pop max-w-md mx-auto">
+      <div className="text-7xl mb-3">🎉</div>
+      <h3 className="text-3xl font-extrabold font-display mb-1 text-primary" dir="rtl">{message}</h3>
+      <p className="text-muted-foreground mb-4" dir="rtl">{correct}/{total} תשובות נכונות</p>
+      <div className="flex items-center justify-center gap-3 mb-2" dir="rtl">
+        <div className="flex items-center gap-2 px-5 py-3 rounded-3xl bg-primary/10 text-primary">
+          <Star className="w-7 h-7 fill-current" />
+          <span className="text-3xl font-extrabold font-display">+{score}</span>
+        </div>
+      </div>
+      <div className="flex items-center justify-center gap-2 text-amber-500 font-bold text-lg mb-6 animate-pop" dir="rtl">
+        <Sparkles className="w-6 h-6" />
+        <span>עכשיו יש לך {wallet} כוכבים!</span>
+      </div>
+      <Button onClick={onRestart} size="lg" className="rounded-2xl text-lg"><RotateCcw className="w-5 h-5 ml-2" />{t('game.again')}</Button>
+    </div>
+  )
+}
 
 export type ReadingMode = 'pic2word' | 'word2pic' | 'memory' | 'firstletter'
 
@@ -65,7 +133,7 @@ function speak(word: string) {
   } catch { /* ignore */ }
 }
 
-export function ReadingGame({ mode, categories }: { mode: ReadingMode; categories: ReadCategory[] }) {
+export function ReadingGame({ mode, categories, onComplete }: { mode: ReadingMode; categories: ReadCategory[]; onComplete?: ReadingDone }) {
   const { dir } = useLocale()
   const Back = dir === 'rtl' ? ArrowRight : ArrowLeft
   const [catId, setCatId] = useState<string | null>(categories.length === 1 ? categories[0].id : null)
@@ -120,16 +188,16 @@ export function ReadingGame({ mode, categories }: { mode: ReadingMode; categorie
         </div>
       </div>
       {mode === 'memory'
-        ? <ReadMemory key={`${category.id}-${level}`} category={category} level={level} />
+        ? <ReadMemory key={`${category.id}-${level}`} category={category} level={level} onComplete={onComplete} />
         : mode === 'firstletter'
-        ? <ReadFirstLetter key={`${category.id}-${level}`} category={category} level={level} />
-        : <ReadChoose key={`${category.id}-${mode}-${level}`} mode={mode} category={category} level={level} />}
+        ? <ReadFirstLetter key={`${category.id}-${level}`} category={category} level={level} onComplete={onComplete} />
+        : <ReadChoose key={`${category.id}-${mode}-${level}`} mode={mode} category={category} level={level} onComplete={onComplete} />}
     </div>
   )
 }
 
 // ===== משחק בחירה: תמונה→מילה או מילה→תמונה =====
-function ReadChoose({ mode, category, level }: { mode: ReadingMode; category: ReadCategory; level: number }) {
+function ReadChoose({ mode, category, level, onComplete }: { mode: ReadingMode; category: ReadCategory; level: number; onComplete?: ReadingDone }) {
   const { t } = useLocale()
   const session = useGameSession()
   const pool = category.items // מאגר מלא — לאפשרויות המסיחות
@@ -148,10 +216,13 @@ function ReadChoose({ mode, category, level }: { mode: ReadingMode; category: Re
   const [idx, setIdx] = useState(0)
   const [picked, setPicked] = useState<ReadItem | null>(null)
   const [done, setDone] = useState(false)
-  const [nonce, setNonce] = useState(0)
+  const [doneMsg, setDoneMsg] = useState('')
+  const [wallet, setWallet] = useState(0)
   const advanceTimer = useRef<number | null>(null)
   const clearTimer = () => { if (advanceTimer.current) { window.clearTimeout(advanceTimer.current); advanceTimer.current = null } }
   useEffect(() => clearTimer, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- קריאת ארנק הכוכבים לאחר hydration
+  useEffect(() => { setWallet(getStars()) }, [])
 
   if (deck.length === 0) return null
 
@@ -168,27 +239,25 @@ function ReadChoose({ mode, category, level }: { mode: ReadingMode; category: Re
 
   const next = () => {
     clearTimer()
-    if (idx + 1 >= deck.length) { setDone(true); burstConfetti(60); return }
+    if (idx + 1 >= deck.length) {
+      onComplete?.(session.correct, deck.length, session.score)
+      setWallet(getStars()); setDoneMsg(praise())
+      setDone(true); burstConfetti(80)
+      return
+    }
     setIdx(idx + 1); setPicked(null)
   }
 
-  const restart = () => { clearTimer(); setIdx(0); setPicked(null); setDone(false); session.reset(); setNonce((n) => n + 1) }
+  const restart = () => { clearTimer(); setIdx(0); setPicked(null); setDone(false); setWallet(getStars()); session.reset() }
 
   if (done) {
-    return (
-      <div key={nonce} className="text-center py-8 animate-pop max-w-md mx-auto">
-        <div className="text-6xl mb-3">🌟</div>
-        <h3 className="text-2xl font-bold font-display mb-2">{t('game.youGot')} {session.score} {t('game.points')}!</h3>
-        <p className="text-muted-foreground mb-6">{session.correct}/{deck.length} ✓</p>
-        <Button onClick={restart} className="rounded-2xl"><RotateCcw className="w-4 h-4 ml-2" />{t('game.again')}</Button>
-      </div>
-    )
+    return <DoneScreen message={doneMsg} score={session.score} correct={session.correct} total={deck.length} wallet={wallet} onRestart={restart} />
   }
 
   return (
     <div>
-      <Scoreboard session={session} />
-      <div className="mb-2 text-sm text-muted-foreground text-center">{idx + 1} / {deck.length}</div>
+      <KidHeader session={session} wallet={wallet} />
+      <ProgressDots total={deck.length} current={idx} />
 
       {/* גירוי: תמונה גדולה או מילה מנוקדת גדולה */}
       <div className="gradient-card rounded-3xl p-8 border border-border mb-6 flex items-center justify-center min-h-[8rem]">
@@ -252,7 +321,7 @@ function ReadChoose({ mode, category, level }: { mode: ReadingMode; category: Re
 }
 
 // ===== מאיזו אות מתחילה המילה? =====
-function ReadFirstLetter({ category, level }: { category: ReadCategory; level: number }) {
+function ReadFirstLetter({ category, level, onComplete }: { category: ReadCategory; level: number; onComplete?: ReadingDone }) {
   const { t } = useLocale()
   const session = useGameSession()
   const pool = useMemo(() => filterByLevel(category.items, level), [category.items, level])
@@ -267,10 +336,13 @@ function ReadFirstLetter({ category, level }: { category: ReadCategory; level: n
   const [idx, setIdx] = useState(0)
   const [picked, setPicked] = useState<string | null>(null)
   const [done, setDone] = useState(false)
-  const [nonce, setNonce] = useState(0)
+  const [doneMsg, setDoneMsg] = useState('')
+  const [wallet, setWallet] = useState(0)
   const advanceTimer = useRef<number | null>(null)
   const clearTimer = () => { if (advanceTimer.current) { window.clearTimeout(advanceTimer.current); advanceTimer.current = null } }
   useEffect(() => clearTimer, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- קריאת ארנק הכוכבים לאחר hydration
+  useEffect(() => { setWallet(getStars()) }, [])
 
   if (deck.length === 0) return null
   const round = rounds[idx]
@@ -283,24 +355,26 @@ function ReadFirstLetter({ category, level }: { category: ReadCategory; level: n
     session.record(ok)
     if (ok) { clearTimer(); advanceTimer.current = window.setTimeout(() => next(), 1000) }
   }
-  const next = () => { clearTimer(); if (idx + 1 >= deck.length) { setDone(true); burstConfetti(60); return } setIdx(idx + 1); setPicked(null) }
-  const restart = () => { clearTimer(); setIdx(0); setPicked(null); setDone(false); session.reset(); setNonce((n) => n + 1) }
+  const next = () => {
+    clearTimer()
+    if (idx + 1 >= deck.length) {
+      onComplete?.(session.correct, deck.length, session.score)
+      setWallet(getStars()); setDoneMsg(praise())
+      setDone(true); burstConfetti(80)
+      return
+    }
+    setIdx(idx + 1); setPicked(null)
+  }
+  const restart = () => { clearTimer(); setIdx(0); setPicked(null); setDone(false); setWallet(getStars()); session.reset() }
 
   if (done) {
-    return (
-      <div key={nonce} className="text-center py-8 animate-pop max-w-md mx-auto">
-        <div className="text-6xl mb-3">🌟</div>
-        <h3 className="text-2xl font-bold font-display mb-2">{t('game.youGot')} {session.score} {t('game.points')}!</h3>
-        <p className="text-muted-foreground mb-6">{session.correct}/{deck.length} ✓</p>
-        <Button onClick={restart} className="rounded-2xl"><RotateCcw className="w-4 h-4 ml-2" />{t('game.again')}</Button>
-      </div>
-    )
+    return <DoneScreen message={doneMsg} score={session.score} correct={session.correct} total={deck.length} wallet={wallet} onRestart={restart} />
   }
 
   return (
     <div>
-      <Scoreboard session={session} />
-      <div className="mb-2 text-sm text-muted-foreground text-center">{idx + 1} / {deck.length}</div>
+      <KidHeader session={session} wallet={wallet} />
+      <ProgressDots total={deck.length} current={idx} />
 
       <div className="gradient-card rounded-3xl p-6 border border-border mb-3 flex flex-col items-center gap-2">
         <WordImage emoji={round.item.emoji} size={112} />
@@ -355,7 +429,7 @@ function ReadFirstLetter({ category, level }: { category: ReadCategory; level: n
 // ===== זיכרון: מילה ↔ תמונה =====
 interface MTile { id: number; pairId: number; kind: 'word' | 'emoji'; label: string }
 
-function ReadMemory({ category, level }: { category: ReadCategory; level: number }) {
+function ReadMemory({ category, level, onComplete }: { category: ReadCategory; level: number; onComplete?: ReadingDone }) {
   const { t } = useLocale()
   const session = useGameSession()
 
@@ -373,9 +447,22 @@ function ReadMemory({ category, level }: { category: ReadCategory; level: number
   const [matched, setMatched] = useState<number[]>([])
   const [busy, setBusy] = useState(false)
   const [nonce, setNonce] = useState(0)
+  const [wallet, setWallet] = useState(0)
+  const [doneMsg, setDoneMsg] = useState('')
+  const firedRef = useRef(false)
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- קריאת ארנק הכוכבים לאחר hydration
+  useEffect(() => { setWallet(getStars()) }, [])
+
+  const allMatched = tiles.length > 0 && matched.length === tiles.length
+  useEffect(() => {
+    if (!allMatched || firedRef.current) return
+    firedRef.current = true
+    onComplete?.(session.correct, tiles.length / 2, session.score)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- עדכון תצוגת הסיום
+    setWallet(getStars()); setDoneMsg(praise())
+  }, [allMatched, onComplete, session.score, session.correct, tiles.length])
 
   if (tiles.length === 0) return null
-  const allMatched = matched.length === tiles.length
 
   const onFlip = (tile: MTile) => {
     if (busy || flipped.includes(tile.id) || matched.includes(tile.id)) return
@@ -401,18 +488,22 @@ function ReadMemory({ category, level }: { category: ReadCategory; level: number
     }
   }
 
-  const restart = () => { setFlipped([]); setMatched([]); setBusy(false); session.reset(); setNonce((n) => n + 1) }
+  const restart = () => { firedRef.current = false; setFlipped([]); setMatched([]); setBusy(false); setWallet(getStars()); session.reset(); setNonce((n) => n + 1) }
 
   return (
     <div key={nonce}>
-      <Scoreboard session={session} />
-      {allMatched && (
-        <div className="text-center mb-4 animate-pop">
-          <div className="text-5xl mb-2">🌟</div>
-          <h3 className="text-xl font-bold font-display">{t('game.youGot')} {session.score} {t('game.points')}!</h3>
+      <KidHeader session={session} wallet={wallet} />
+      {allMatched ? (
+        <div className="text-center mb-4 animate-pop" dir="rtl">
+          <div className="text-6xl mb-2">🎉</div>
+          <h3 className="text-2xl font-extrabold font-display text-primary mb-1">{doneMsg}</h3>
+          <div className="flex items-center justify-center gap-2 text-amber-500 font-bold animate-pop">
+            <Sparkles className="w-5 h-5" /><span>עכשיו יש לך {wallet} כוכבים!</span>
+          </div>
         </div>
+      ) : (
+        <p className="text-center text-sm text-muted-foreground mb-4">חברו כל תמונה למילה שלה</p>
       )}
-      <p className="text-center text-sm text-muted-foreground mb-4">חברו כל תמונה למילה שלה</p>
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
         {tiles.map((tile) => {
           const isUp = flipped.includes(tile.id) || matched.includes(tile.id)
