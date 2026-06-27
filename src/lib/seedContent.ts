@@ -303,7 +303,8 @@ export function buildSeedDocs(): SeedDoc[] {
         docs.push({ collection: 'games', id: 'hebrew-g1-read-lastletter', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'באיזו אות נגמרת?', titleEn: 'Last Letter', config: { mode: 'lastletter', categories: READING_CATEGORIES } } })
         docs.push({ collection: 'games', id: 'hebrew-g1-read-buildword', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'בניית מילה', titleEn: 'Build a Word', config: { mode: 'buildword', categories: READING_CATEGORIES } } })
         docs.push({ collection: 'games', id: 'hebrew-g1-read-order', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'סדר את המשפט', titleEn: 'Order the Sentence', config: { mode: 'order', sentences: READING_SENTENCES } } })
-        docs.push({ collection: 'games', id: 'hebrew-g1-read-rhyme', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'חרוזים', titleEn: 'Rhymes', config: { mode: 'rhyme', groups: RHYME_GROUPS } } })
+        // Firestore אינו תומך במערך-בתוך-מערך — עוטפים כל קבוצה באובייקט { words }.
+        docs.push({ collection: 'games', id: 'hebrew-g1-read-rhyme', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'חרוזים', titleEn: 'Rhymes', config: { mode: 'rhyme', groups: RHYME_GROUPS.map((words) => ({ words })) } } })
         docs.push({ collection: 'games', id: 'hebrew-g1-read-syllable', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'כמה הברות?', titleEn: 'How Many Syllables', config: { mode: 'syllable', words: SYLLABLE_WORDS } } })
       }
 

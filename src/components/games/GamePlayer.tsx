@@ -51,7 +51,9 @@ export function GamePlayer({ game, questionBank }: { game: Game; questionBank: Q
       return <OrderSentence sentences={sentences} onComplete={finish} />
     }
     if (mode === 'rhyme') {
-      const groups = (config.groups as RhymeWord[][] | undefined) ?? []
+      // נשמר כ-[{ words: [...] }] (Firestore לא תומך במערך-בתוך-מערך); תאימות גם לפורמט הישן.
+      const raw = (config.groups as (RhymeWord[] | { words: RhymeWord[] })[] | undefined) ?? []
+      const groups = raw.map((g) => (Array.isArray(g) ? g : g.words))
       return <RhymeGame groups={groups} onComplete={finish} />
     }
     if (mode === 'syllable') {
