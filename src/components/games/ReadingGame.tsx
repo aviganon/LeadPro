@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { WordImage } from './WordImage'
 import { burstConfetti } from '@/lib/confetti'
 import { getStars } from '@/lib/localProgress'
+import { praiseAloud, cheerAloud } from '@/lib/speech'
+import { VoiceToggle } from './VoiceToggle'
 import type { ReadCategory, ReadItem } from '@/lib/readingContent'
 
 export interface ReadingDone { (correct: number, total: number, score: number): void }
@@ -34,6 +36,7 @@ function KidHeader({ session, wallet }: { session: GameSession; wallet: number }
         <Sparkles className="w-6 h-6" />
         <span className="text-xl font-bold tabular-nums">{wallet + session.score}</span>
       </div>
+      <VoiceToggle className="!p-2.5 !rounded-3xl" />
     </div>
   )
 }
@@ -234,14 +237,14 @@ function ReadChoose({ mode, category, level, onComplete }: { mode: ReadingMode; 
     setPicked(opt)
     const ok = opt.word === round.item.word
     session.record(ok)
-    if (ok) { clearTimer(); advanceTimer.current = window.setTimeout(() => next(), 1000) }
+    if (ok) { praiseAloud(); clearTimer(); advanceTimer.current = window.setTimeout(() => next(), 1000) }
   }
 
   const next = () => {
     clearTimer()
     if (idx + 1 >= deck.length) {
       onComplete?.(session.correct, deck.length, session.score)
-      setWallet(getStars()); setDoneMsg(praise())
+      setWallet(getStars()); setDoneMsg(praise()); cheerAloud()
       setDone(true); burstConfetti(80)
       return
     }
@@ -353,13 +356,13 @@ function ReadFirstLetter({ category, level, onComplete }: { category: ReadCatego
     setPicked(l)
     const ok = l === round.correct
     session.record(ok)
-    if (ok) { clearTimer(); advanceTimer.current = window.setTimeout(() => next(), 1000) }
+    if (ok) { praiseAloud(); clearTimer(); advanceTimer.current = window.setTimeout(() => next(), 1000) }
   }
   const next = () => {
     clearTimer()
     if (idx + 1 >= deck.length) {
       onComplete?.(session.correct, deck.length, session.score)
-      setWallet(getStars()); setDoneMsg(praise())
+      setWallet(getStars()); setDoneMsg(praise()); cheerAloud()
       setDone(true); burstConfetti(80)
       return
     }
@@ -458,6 +461,7 @@ function ReadMemory({ category, level, onComplete }: { category: ReadCategory; l
     if (!allMatched || firedRef.current) return
     firedRef.current = true
     onComplete?.(session.correct, tiles.length / 2, session.score)
+    cheerAloud()
     // eslint-disable-next-line react-hooks/set-state-in-effect -- עדכון תצוגת הסיום
     setWallet(getStars()); setDoneMsg(praise())
   }, [allMatched, onComplete, session.score, session.correct, tiles.length])
@@ -478,7 +482,7 @@ function ReadMemory({ category, level, onComplete }: { category: ReadCategory; l
           const nm = [...matched, a.id, b.id]
           setMatched(nm)
           session.record(true)
-          if (nm.length === tiles.length) burstConfetti(70)
+          if (nm.length === tiles.length) burstConfetti(70); else praiseAloud()
         } else {
           session.record(false)
         }

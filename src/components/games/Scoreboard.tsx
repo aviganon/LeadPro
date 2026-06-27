@@ -3,6 +3,7 @@
 import { Star, Flame } from 'lucide-react'
 import { useLocale } from '@/context/LocaleContext'
 import type { GameSession } from '@/hooks/useGameSession'
+import { VoiceToggle } from './VoiceToggle'
 
 export function Scoreboard({ session }: { session: GameSession }) {
   const { t } = useLocale()
@@ -16,6 +17,7 @@ export function Scoreboard({ session }: { session: GameSession }) {
         <Flame className="w-4 h-4 fill-current" />
         {session.streak} <span className="text-xs font-normal opacity-70">{t('game.streak')}</span>
       </div>
+      <VoiceToggle />
     </div>
   )
 }

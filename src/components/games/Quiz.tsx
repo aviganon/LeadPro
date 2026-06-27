@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Scoreboard } from './Scoreboard'
 import { ReportQuestionButton } from '@/components/ReportQuestionButton'
 import { burstConfetti } from '@/lib/confetti'
+import { praiseAloud, cheerAloud } from '@/lib/speech'
 import { submitScore } from '@/lib/leaderboard'
 import { getSavedName, saveName } from '@/lib/device'
 import type { Question } from '@/types'
@@ -79,7 +80,7 @@ export function Quiz({
     setSelected(value)
     setRevealed(true)
     session.record(ok)
-    if (ok) { clearTimer(); advanceTimer.current = window.setTimeout(() => next(), 900) }
+    if (ok) { praiseAloud(); clearTimer(); advanceTimer.current = window.setTimeout(() => next(), 900) }
   }
 
   const next = () => {
@@ -87,6 +88,7 @@ export function Quiz({
     if (idx + 1 >= deck.length) {
       setDone(true)
       burstConfetti(60)
+      cheerAloud()
       onComplete?.(session.correct, deck.length, session.score)
       return
     }

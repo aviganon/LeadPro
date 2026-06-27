@@ -7,6 +7,7 @@ import { useGameSession } from '@/hooks/useGameSession'
 import { Button } from '@/components/ui/button'
 import { Scoreboard } from './Scoreboard'
 import { burstConfetti } from '@/lib/confetti'
+import { praiseAloud, cheerAloud } from '@/lib/speech'
 
 export interface MemoryPair {
   a: string
@@ -65,7 +66,7 @@ export function Memory({ pairs }: { pairs: MemoryPair[] }) {
           const nm = [...matched, aId, bId]
           setMatched(nm)
           session.record(true)
-          if (nm.length === tiles.length) burstConfetti(70)
+          if (nm.length === tiles.length) { burstConfetti(70); cheerAloud() } else { praiseAloud() }
         } else {
           session.record(false)
         }
