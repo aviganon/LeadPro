@@ -2,7 +2,7 @@
 // מתמטיקה (מחולל לפי כיתה × 3 רמות קושי), אנגלית, עברית, מדע.
 // כל פריט מקבל מזהה דטרמיניסטי כדי שזריעה חוזרת לא תיצור כפילויות.
 
-import { READING_CATEGORIES } from './readingContent'
+import { READING_CATEGORIES, READING_SENTENCES } from './readingContent'
 
 export interface SeedDoc {
   collection: 'subjects' | 'topics' | 'questions' | 'games' | 'materials' | 'institutions' | 'departments'
@@ -298,6 +298,8 @@ export function buildSeedDocs(): SeedDoc[] {
         docs.push({ collection: 'games', id: 'hebrew-g1-read-word2pic', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'מילה ← תמונה', titleEn: 'Word to Picture', config: { mode: 'word2pic', categories: READING_CATEGORIES } } })
         docs.push({ collection: 'games', id: 'hebrew-g1-read-memory', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'זיכרון מילים ותמונות', titleEn: 'Word-Picture Memory', config: { mode: 'memory', categories: READING_CATEGORIES } } })
         docs.push({ collection: 'games', id: 'hebrew-g1-read-firstletter', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'מאיזו אות מתחילה?', titleEn: 'First Letter', config: { mode: 'firstletter', categories: READING_CATEGORIES } } })
+        docs.push({ collection: 'games', id: 'hebrew-g1-read-sentence', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'משפט ← תמונה', titleEn: 'Sentence to Picture', config: { mode: 'sentence', sentences: READING_SENTENCES } } })
+        docs.push({ collection: 'games', id: 'hebrew-g1-read-cloze', data: { subjectId: 'hebrew', type: 'reading', level: 'elementary', grade, titleHe: 'השלמת משפט', titleEn: 'Complete the Sentence', config: { mode: 'cloze', sentences: READING_SENTENCES } } })
       }
 
       // דף עזר קצר

@@ -5,6 +5,33 @@
 export interface ReadItem { word: string; emoji: string }
 export interface ReadCategory { id: string; name: string; emoji: string; items: ReadItem[] }
 
+/** משפט קצר מנוקד למשחקי הקריאה. `template` מכיל ___ במקום מילת המפתח (`answer`). */
+export interface ReadSentence { template: string; answer: string; emoji: string }
+
+/** משפטים קצרים — למשחק "משפט ← תמונה" ולמשחק "השלמת משפט". */
+export const READING_SENTENCES: ReadSentence[] = [
+  { template: 'הַ___ נוֹבֵחַ', answer: 'כֶּלֶב', emoji: '🐶' },
+  { template: 'הַ___ יָשֵׁן', answer: 'חָתוּל', emoji: '🐱' },
+  { template: 'הַ___ שׂוֹחֶה בַּמַּיִם', answer: 'דָּג', emoji: '🐟' },
+  { template: 'הַ___ עָפָה', answer: 'צִפּוֹר', emoji: '🐦' },
+  { template: 'הַיֶּלֶד אוֹכֵל ___', answer: 'תַּפּוּחַ', emoji: '🍎' },
+  { template: 'הַ___ זוֹרַחַת', answer: 'שֶׁמֶשׁ', emoji: '☀️' },
+  { template: 'הַ___ יָפֶה', answer: 'פֶּרַח', emoji: '🌸' },
+  { template: 'הָ___ שׁוֹאֵג', answer: 'אַרְיֵה', emoji: '🦁' },
+  { template: 'הַ___ גָּדוֹל', answer: 'פִּיל', emoji: '🐘' },
+  { template: 'הַ___ רָץ', answer: 'סוּס', emoji: '🐴' },
+  { template: 'הָ___ יָרֹק', answer: 'עֵץ', emoji: '🌳' },
+  { template: 'הַ___ נוֹסַעַת', answer: 'מְכוֹנִית', emoji: '🚗' },
+  { template: 'הַ___ טָס בַּשָּׁמַיִם', answer: 'מָטוֹס', emoji: '✈️' },
+  { template: 'הַ___ בּוֹכֶה', answer: 'תִּינוֹק', emoji: '👶' },
+  { template: 'הָ___ מְתוּקָה', answer: 'עוּגָה', emoji: '🍰' },
+  { template: 'הַ___ עָגֹל', answer: 'כַּדּוּר', emoji: '⚽' },
+  { template: 'הָ___ קוֹפֵץ', answer: 'אַרְנָב', emoji: '🐰' },
+  { template: 'הַ___ יוֹרֵד', answer: 'גֶּשֶׁם', emoji: '🌧️' },
+  { template: 'הַ___ אוֹכֶלֶת עֵשֶׂב', answer: 'פָּרָה', emoji: '🐄' },
+  { template: 'הַ___ קָרָה', answer: 'גְּלִידָה', emoji: '🍦' },
+]
+
 export const READING_CATEGORIES: ReadCategory[] = [
   {
     id: 'animals', name: 'חַיּוֹת', emoji: '🐾',
