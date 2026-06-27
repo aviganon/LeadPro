@@ -4,7 +4,7 @@ import { Quiz } from './Quiz'
 import { Flashcards, type FlashCard } from './Flashcards'
 import { Memory, type MemoryPair } from './Memory'
 import { ReadingGame, type ReadingMode } from './ReadingGame'
-import { SentenceGame, type SentenceMode } from './SentenceGame'
+import { SentenceGame, OrderSentence, type SentenceMode } from './SentenceGame'
 import type { ReadCategory, ReadSentence } from '@/lib/readingContent'
 import type { Game, Question } from '@/types'
 import { addStars, addQuizResult } from '@/lib/localProgress'
@@ -44,6 +44,10 @@ export function GamePlayer({ game, questionBank }: { game: Game; questionBank: Q
     if (mode === 'sentence' || mode === 'cloze') {
       const sentences = (config.sentences as ReadSentence[] | undefined) ?? []
       return <SentenceGame mode={mode as SentenceMode} sentences={sentences} onComplete={finish} />
+    }
+    if (mode === 'order') {
+      const sentences = (config.sentences as ReadSentence[] | undefined) ?? []
+      return <OrderSentence sentences={sentences} onComplete={finish} />
     }
     const categories = (config.categories as ReadCategory[] | undefined) ?? []
     return <ReadingGame mode={mode as ReadingMode} categories={categories} onComplete={finish} />

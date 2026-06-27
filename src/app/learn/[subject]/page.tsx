@@ -29,7 +29,25 @@ import type { Subject, Game, Question, Material } from '@/types'
 
 type Difficulty = 'all' | 1 | 2 | 3
 
-const GAME_EMOJI: Record<string, string> = { quiz: '❓', flashcards: '🃏', memory: '🧠', reading: '📖' }
+// סגנון צבעוני לכל משחק — לפי מצב הקריאה (config.mode) או סוג המשחק.
+const GAME_STYLE: Record<string, { emoji: string; bg: string }> = {
+  pic2word: { emoji: '🖼️', bg: 'from-sky-400/25 to-sky-400/5' },
+  word2pic: { emoji: '🔤', bg: 'from-violet-400/25 to-violet-400/5' },
+  firstletter: { emoji: '🔡', bg: 'from-amber-400/25 to-amber-400/5' },
+  lastletter: { emoji: '🔚', bg: 'from-orange-400/25 to-orange-400/5' },
+  sentence: { emoji: '📖', bg: 'from-emerald-400/25 to-emerald-400/5' },
+  cloze: { emoji: '✏️', bg: 'from-teal-400/25 to-teal-400/5' },
+  buildword: { emoji: '🧩', bg: 'from-rose-400/25 to-rose-400/5' },
+  order: { emoji: '🔀', bg: 'from-indigo-400/25 to-indigo-400/5' },
+  quiz: { emoji: '❓', bg: 'from-primary/25 to-primary/5' },
+  flashcards: { emoji: '🃏', bg: 'from-cyan-400/25 to-cyan-400/5' },
+  memory: { emoji: '🧠', bg: 'from-pink-400/25 to-pink-400/5' },
+  reading: { emoji: '📖', bg: 'from-emerald-400/25 to-emerald-400/5' },
+}
+function gameVisual(g: Game): { emoji: string; bg: string } {
+  const mode = (g.config?.mode as string | undefined) || ''
+  return GAME_STYLE[mode] ?? GAME_STYLE[g.type] ?? { emoji: '🎮', bg: 'from-muted to-transparent' }
+}
 
 export default function SubjectHub() {
   const params = useParams<{ subject: string }>()
@@ -256,16 +274,19 @@ export default function SubjectHub() {
                   <div className="py-12 text-center text-muted-foreground">{t('subject.noContent')}</div>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {games.map((g) => (
-                      <button
-                        key={g.id}
-                        onClick={() => setActiveGame(g)}
-                        className="gradient-card rounded-3xl p-6 border border-border hover-lift flex items-center gap-4 text-right"
-                      >
-                        <span className="text-4xl">{GAME_EMOJI[g.type] ?? '🎮'}</span>
-                        <span className="font-bold text-lg font-display">{pickLang(locale, g.titleHe, g.titleEn)}</span>
-                      </button>
-                    ))}
+                    {games.map((g) => {
+                      const v = gameVisual(g)
+                      return (
+                        <button
+                          key={g.id}
+                          onClick={() => setActiveGame(g)}
+                          className={`relative overflow-hidden rounded-3xl p-5 border border-border hover-lift flex items-center gap-4 text-right bg-gradient-to-br ${v.bg}`}
+                        >
+                          <span className="w-16 h-16 rounded-2xl bg-card shadow-sm border border-border/50 flex items-center justify-center text-4xl shrink-0">{v.emoji}</span>
+                          <span className="font-bold text-lg font-display">{pickLang(locale, g.titleHe, g.titleEn)}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
               </TabsContent>

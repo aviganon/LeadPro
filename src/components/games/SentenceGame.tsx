@@ -138,3 +138,107 @@ export function SentenceGame({ mode, sentences, onComplete }: { mode: SentenceMo
     </div>
   )
 }
+
+/** "סדר את המשפט" — לוחצים על המילים לפי הסדר הנכון כדי לבנות את המשפט. */
+export function OrderSentence({ sentences, onComplete }: { sentences: ReadSentence[]; onComplete?: ReadingDone }) {
+  const session = useGameSession()
+  const pool = sentences
+  const deck = useMemo(() => shuffle(pool).slice(0, Math.min(8, pool.length)), [pool])
+  const rounds = useMemo(() => deck.map((s) => {
+    const words = fullSentence(s).split(' ')
+    return { s, words, tiles: shuffle(words.map((w, i) => ({ id: i, w }))) }
+  }), [deck])
+
+  const [idx, setIdx] = useState(0)
+  const [pos, setPos] = useState(0)
+  const [used, setUsed] = useState<number[]>([])
+  const [wrong, setWrong] = useState<number | null>(null)
+  const [done, setDone] = useState(false)
+  const [doneMsg, setDoneMsg] = useState('')
+  const [wallet, setWallet] = useState(0)
+  const timer = useRef<number | null>(null)
+  const clearTimer = () => { if (timer.current) { window.clearTimeout(timer.current); timer.current = null } }
+  useEffect(() => clearTimer, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- קריאת ארנק הכוכבים לאחר hydration
+  useEffect(() => { setWallet(getStars()) }, [])
+
+  if (deck.length === 0) return null
+  const round = rounds[idx]
+  const complete = pos >= round.words.length
+
+  const nextRound = () => {
+    clearTimer()
+    if (idx + 1 >= deck.length) {
+      onComplete?.(session.correct, deck.length, session.score)
+      setWallet(getStars()); setDoneMsg(praise()); cheerAloud()
+      setDone(true); burstConfetti(80)
+      return
+    }
+    setIdx(idx + 1); setPos(0); setUsed([])
+  }
+
+  const tap = (tile: { id: number; w: string }) => {
+    if (complete || used.includes(tile.id)) return
+    if (tile.w === round.words[pos]) {
+      const np = pos + 1
+      setUsed((u) => [...u, tile.id]); setPos(np)
+      if (np >= round.words.length) {
+        session.record(true); praiseAloud()
+        clearTimer(); timer.current = window.setTimeout(() => nextRound(), 1200)
+      }
+    } else {
+      setWrong(tile.id)
+      window.setTimeout(() => setWrong((w) => (w === tile.id ? null : w)), 500)
+    }
+  }
+
+  const restart = () => { clearTimer(); setIdx(0); setPos(0); setUsed([]); setDone(false); setWallet(getStars()); session.reset() }
+
+  if (done) {
+    return <DoneScreen message={doneMsg} score={session.score} correct={session.correct} total={deck.length} wallet={wallet} onRestart={restart} />
+  }
+
+  return (
+    <div>
+      <KidHeader session={session} wallet={wallet} />
+      <ProgressDots total={deck.length} current={idx} />
+
+      <div className="gradient-card rounded-3xl p-6 border border-border mb-5 text-center">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <WordImage emoji={round.s.emoji} size={56} />
+          <span className="text-sm text-muted-foreground">סדרו את המשפט</span>
+        </div>
+        <div className="flex flex-wrap justify-center gap-2 min-h-[3.25rem]" dir="rtl">
+          {round.words.slice(0, pos).map((w, i) => (
+            <span key={i} className="px-3 py-2 rounded-xl bg-success/15 text-success font-bold font-display text-xl">{w}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-3" dir="rtl">
+        {round.tiles.map((tile) => {
+          const isUsed = used.includes(tile.id)
+          const isWrong = wrong === tile.id
+          return (
+            <button
+              key={tile.id}
+              onClick={() => tap(tile)}
+              disabled={isUsed}
+              className={`px-4 py-3 rounded-2xl border-2 text-xl font-bold font-display transition-all ${
+                isUsed ? 'opacity-20 border-border' : isWrong ? 'bg-destructive/15 border-destructive text-destructive animate-shake' : 'bg-card border-border hover:border-primary/50'
+              }`}
+            >
+              {tile.w}
+            </button>
+          )
+        })}
+      </div>
+
+      {complete && (
+        <div className="mt-6 text-center animate-slide-up">
+          <div className="font-bold text-lg font-display text-success">כל הכבוד!</div>
+        </div>
+      )}
+    </div>
+  )
+}

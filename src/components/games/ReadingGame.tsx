@@ -14,7 +14,7 @@ import type { ReadCategory, ReadItem } from '@/lib/readingContent'
 
 export type { ReadingDone }
 
-export type ReadingMode = 'pic2word' | 'word2pic' | 'memory' | 'firstletter'
+export type ReadingMode = 'pic2word' | 'word2pic' | 'memory' | 'firstletter' | 'lastletter' | 'buildword'
 
 const MAX_ROUNDS = 10
 const HEB_ALEF = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ', 'ק', 'ר', 'ש', 'ת']
@@ -28,11 +28,14 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-/** האות הראשונה של מילה (ללא ניקוד). */
-function firstLetter(word: string): string {
-  const base = word.replace(/[֑-ׇ]/g, '').trim()
-  return [...base][0] ?? ''
+/** האותיות של מילה ללא ניקוד. */
+function baseLetters(word: string): string[] {
+  return [...word.replace(/[֑-ׇ]/g, '').trim()]
 }
+/** האות הראשונה של מילה (ללא ניקוד). */
+function firstLetter(word: string): string { return baseLetters(word)[0] ?? '' }
+/** האות האחרונה של מילה (ללא ניקוד). */
+function lastLetter(word: string): string { const b = baseLetters(word); return b[b.length - 1] ?? '' }
 
 /** מספר האותיות במילה (ללא ניקוד) — בסיס לרמת הקושי. */
 function letterCount(word: string): number {
@@ -125,8 +128,10 @@ export function ReadingGame({ mode, categories, onComplete }: { mode: ReadingMod
       </div>
       {mode === 'memory'
         ? <ReadMemory key={`${category.id}-${level}`} category={category} level={level} onComplete={onComplete} />
-        : mode === 'firstletter'
-        ? <ReadFirstLetter key={`${category.id}-${level}`} category={category} level={level} onComplete={onComplete} />
+        : mode === 'buildword'
+        ? <BuildWord key={`${category.id}-${level}`} category={category} level={level} onComplete={onComplete} />
+        : mode === 'firstletter' || mode === 'lastletter'
+        ? <ReadFirstLetter key={`${category.id}-${mode}-${level}`} which={mode === 'lastletter' ? 'last' : 'first'} category={category} level={level} onComplete={onComplete} />
         : <ReadChoose key={`${category.id}-${mode}-${level}`} mode={mode} category={category} level={level} onComplete={onComplete} />}
     </div>
   )
@@ -256,18 +261,18 @@ function ReadChoose({ mode, category, level, onComplete }: { mode: ReadingMode; 
   )
 }
 
-// ===== מאיזו אות מתחילה המילה? =====
-function ReadFirstLetter({ category, level, onComplete }: { category: ReadCategory; level: number; onComplete?: ReadingDone }) {
+// ===== מאיזו אות מתחילה / נגמרת המילה? =====
+function ReadFirstLetter({ category, level, which, onComplete }: { category: ReadCategory; level: number; which: 'first' | 'last'; onComplete?: ReadingDone }) {
   const { t } = useLocale()
   const session = useGameSession()
   const pool = useMemo(() => filterByLevel(category.items, level), [category.items, level])
 
   const deck = useMemo(() => shuffle(pool).slice(0, Math.min(MAX_ROUNDS, pool.length)), [pool])
   const rounds = useMemo(() => deck.map((item) => {
-    const correct = firstLetter(item.word)
+    const correct = which === 'last' ? lastLetter(item.word) : firstLetter(item.word)
     const others = shuffle(HEB_ALEF.filter((l) => l !== correct)).slice(0, 3)
     return { item, correct, opts: shuffle([correct, ...others]) }
-  }), [deck])
+  }), [deck, which])
 
   const [idx, setIdx] = useState(0)
   const [picked, setPicked] = useState<string | null>(null)
@@ -314,7 +319,7 @@ function ReadFirstLetter({ category, level, onComplete }: { category: ReadCatego
 
       <div className="gradient-card rounded-3xl p-6 border border-border mb-3 flex flex-col items-center gap-2">
         <WordImage emoji={round.item.emoji} size={112} />
-        <span className="text-sm text-muted-foreground">מאיזו אות מתחילה המילה?</span>
+        <span className="text-sm text-muted-foreground">{which === 'last' ? 'באיזו אות נגמרת המילה?' : 'מאיזו אות מתחילה המילה?'}</span>
       </div>
 
       <div className="grid grid-cols-4 gap-3 mb-2">
@@ -346,7 +351,9 @@ function ReadFirstLetter({ category, level, onComplete }: { category: ReadCatego
           <div className="flex items-center justify-center gap-3 mt-2" dir="rtl">
             <WordImage emoji={round.item.emoji} size={44} />
             <span className="text-3xl font-bold font-display">
-              <span className="text-success">{round.correct}</span>{round.item.word.replace(/[֑-ׇ]/g, '').slice(1)}
+              {which === 'last'
+                ? <>{baseLetters(round.item.word).slice(0, -1).join('')}<span className="text-success">{round.correct}</span></>
+                : <><span className="text-success">{round.correct}</span>{baseLetters(round.item.word).slice(1).join('')}</>}
             </span>
           </div>
           {picked !== round.correct && (
@@ -356,6 +363,112 @@ function ReadFirstLetter({ category, level, onComplete }: { category: ReadCatego
               </Button>
             </div>
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ===== בניית מילה מאותיות =====
+function BuildWord({ category, level, onComplete }: { category: ReadCategory; level: number; onComplete?: ReadingDone }) {
+  const session = useGameSession()
+  const pool = useMemo(() => filterByLevel(category.items, level), [category.items, level])
+  const deck = useMemo(() => shuffle(pool).slice(0, Math.min(8, pool.length)), [pool])
+  const rounds = useMemo(() => deck.map((item) => {
+    const base = baseLetters(item.word)
+    return { item, base, tiles: shuffle(base.map((ch, i) => ({ id: i, ch }))) }
+  }), [deck])
+
+  const [idx, setIdx] = useState(0)
+  const [pos, setPos] = useState(0)
+  const [used, setUsed] = useState<number[]>([])
+  const [wrong, setWrong] = useState<number | null>(null)
+  const [done, setDone] = useState(false)
+  const [doneMsg, setDoneMsg] = useState('')
+  const [wallet, setWallet] = useState(0)
+  const timer = useRef<number | null>(null)
+  const clearTimer = () => { if (timer.current) { window.clearTimeout(timer.current); timer.current = null } }
+  useEffect(() => clearTimer, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- קריאת ארנק הכוכבים לאחר hydration
+  useEffect(() => { setWallet(getStars()) }, [])
+
+  if (deck.length === 0) return null
+  const round = rounds[idx]
+  const complete = pos >= round.base.length
+
+  const nextWord = () => {
+    clearTimer()
+    if (idx + 1 >= deck.length) {
+      onComplete?.(session.correct, deck.length, session.score)
+      setWallet(getStars()); setDoneMsg(praise()); cheerAloud()
+      setDone(true); burstConfetti(80)
+      return
+    }
+    setIdx(idx + 1); setPos(0); setUsed([])
+  }
+
+  const tap = (tile: { id: number; ch: string }) => {
+    if (complete || used.includes(tile.id)) return
+    if (tile.ch === round.base[pos]) {
+      const np = pos + 1
+      setUsed((u) => [...u, tile.id]); setPos(np)
+      if (np >= round.base.length) {
+        session.record(true); praiseAloud()
+        clearTimer(); timer.current = window.setTimeout(() => nextWord(), 1100)
+      }
+    } else {
+      setWrong(tile.id)
+      window.setTimeout(() => setWrong((w) => (w === tile.id ? null : w)), 500)
+    }
+  }
+
+  const restart = () => { clearTimer(); setIdx(0); setPos(0); setUsed([]); setDone(false); setWallet(getStars()); session.reset() }
+
+  if (done) {
+    return <DoneScreen message={doneMsg} score={session.score} correct={session.correct} total={deck.length} wallet={wallet} onRestart={restart} />
+  }
+
+  return (
+    <div>
+      <KidHeader session={session} wallet={wallet} />
+      <ProgressDots total={deck.length} current={idx} />
+
+      <div className="gradient-card rounded-3xl p-6 border border-border mb-4 flex flex-col items-center gap-2">
+        <WordImage emoji={round.item.emoji} size={96} />
+        <span className="text-3xl font-bold font-display" dir="rtl">{round.item.word}</span>
+        <span className="text-sm text-muted-foreground">בנו את המילה מהאותיות</span>
+        <div className="flex items-center justify-center gap-2 mt-1" dir="rtl">
+          {round.base.map((ch, i) => (
+            <span key={i} className={`w-11 h-14 rounded-xl border-2 flex items-center justify-center text-3xl font-bold font-display ${i < pos ? 'bg-success/15 border-success text-success' : 'border-dashed border-border text-transparent'}`}>
+              {i < pos ? ch : '•'}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        {round.tiles.map((tile) => {
+          const isUsed = used.includes(tile.id)
+          const isWrong = wrong === tile.id
+          return (
+            <button
+              key={tile.id}
+              onClick={() => tap(tile)}
+              disabled={isUsed}
+              dir="rtl"
+              className={`w-14 h-16 rounded-2xl border-2 text-4xl font-bold font-display transition-all flex items-center justify-center ${
+                isUsed ? 'opacity-20 border-border' : isWrong ? 'bg-destructive/15 border-destructive text-destructive animate-shake' : 'bg-card border-border hover:border-primary/50'
+              }`}
+            >
+              {tile.ch}
+            </button>
+          )
+        })}
+      </div>
+
+      {complete && (
+        <div className="mt-6 text-center animate-slide-up">
+          <div className="font-bold text-lg font-display text-success">מצוין!</div>
         </div>
       )}
     </div>
