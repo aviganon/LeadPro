@@ -39,6 +39,8 @@ const GAME_STYLE: Record<string, { emoji: string; bg: string }> = {
   cloze: { emoji: '✏️', bg: 'from-teal-400/25 to-teal-400/5' },
   buildword: { emoji: '🧩', bg: 'from-rose-400/25 to-rose-400/5' },
   order: { emoji: '🔀', bg: 'from-indigo-400/25 to-indigo-400/5' },
+  rhyme: { emoji: '🎵', bg: 'from-fuchsia-400/25 to-fuchsia-400/5' },
+  syllable: { emoji: '👏', bg: 'from-lime-400/25 to-lime-400/5' },
   quiz: { emoji: '❓', bg: 'from-primary/25 to-primary/5' },
   flashcards: { emoji: '🃏', bg: 'from-cyan-400/25 to-cyan-400/5' },
   memory: { emoji: '🧠', bg: 'from-pink-400/25 to-pink-400/5' },

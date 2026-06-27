@@ -32,6 +32,44 @@ export const READING_SENTENCES: ReadSentence[] = [
   { template: 'הַ___ קָרָה', answer: 'גְּלִידָה', emoji: '🍦' },
 ]
 
+/** קבוצות חרוזים — כל קבוצה היא מילים שמתחרזות (סיומת זהה). אומת ידנית. */
+export interface RhymeWord { word: string; emoji?: string }
+export const RHYME_GROUPS: RhymeWord[][] = [
+  // סיומת "וֹן"
+  [{ word: 'בָּלוֹן', emoji: '🎈' }, { word: 'חַלּוֹן', emoji: '🪟' }, { word: 'סַבּוֹן', emoji: '🧼' }, { word: 'עִתּוֹן', emoji: '📰' }],
+  // סיומת "וּר"
+  [{ word: 'כַּדּוּר', emoji: '⚽' }, { word: 'סָגוּר', emoji: '🔒' }, { word: 'שָׁמוּר' }, { word: 'גָּמוּר' }],
+  // סיומת "ָה" (תנועת A פתוחה)
+  [{ word: 'פָּרָה', emoji: '🐄' }, { word: 'עוּגָה', emoji: '🍰' }, { word: 'בָּנָנָה', emoji: '🍌' }, { word: 'יַלְדָּה', emoji: '👧' }],
+  // סיומת "יִם" (זוגי)
+  [{ word: 'מַיִם', emoji: '💧' }, { word: 'אוֹפַנַּיִם', emoji: '🚲' }, { word: 'מִכְנָסַיִם', emoji: '👖' }, { word: 'מִשְׁקָפַיִם', emoji: '👓' }],
+]
+
+/** מילים עם מספר הברות ודאי (לפי מחיאות כפיים — אומת ידנית). */
+export interface SyllableWord { word: string; emoji: string; count: number }
+export const SYLLABLE_WORDS: SyllableWord[] = [
+  { word: 'דָּג', emoji: '🐟', count: 1 },
+  { word: 'פִּיל', emoji: '🐘', count: 1 },
+  { word: 'סוּס', emoji: '🐴', count: 1 },
+  { word: 'עֵץ', emoji: '🌳', count: 1 },
+  { word: 'דֹּב', emoji: '🐻', count: 1 },
+  { word: 'כֶּלֶב', emoji: '🐶', count: 2 },
+  { word: 'חָתוּל', emoji: '🐱', count: 2 },
+  { word: 'פָּרָה', emoji: '🐄', count: 2 },
+  { word: 'שֶׁמֶשׁ', emoji: '☀️', count: 2 },
+  { word: 'פֶּרַח', emoji: '🌸', count: 2 },
+  { word: 'גֶּזֶר', emoji: '🥕', count: 2 },
+  { word: 'סֵפֶר', emoji: '📖', count: 2 },
+  { word: 'אַרְנָב', emoji: '🐰', count: 2 },
+  { word: 'בָּנָנָה', emoji: '🍌', count: 3 },
+  { word: 'תַּפּוּחַ', emoji: '🍎', count: 3 },
+  { word: 'עֲנָבִים', emoji: '🍇', count: 3 },
+  { word: 'מַתָּנָה', emoji: '🎁', count: 3 },
+  { word: 'אוֹטוֹבּוּס', emoji: '🚌', count: 3 },
+  { word: 'אֲבַטִּיחַ', emoji: '🍉', count: 4 },
+  { word: 'אוֹפַנַּיִם', emoji: '🚲', count: 4 },
+]
+
 export const READING_CATEGORIES: ReadCategory[] = [
   {
     id: 'animals', name: 'חַיּוֹת', emoji: '🐾',
