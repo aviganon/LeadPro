@@ -30,6 +30,20 @@ export const READING_SENTENCES: ReadSentence[] = [
   { template: 'הַ___ יוֹרֵד', answer: 'גֶּשֶׁם', emoji: '🌧️' },
   { template: 'הַ___ אוֹכֶלֶת עֵשֶׂב', answer: 'פָּרָה', emoji: '🐄' },
   { template: 'הַ___ קָרָה', answer: 'גְּלִידָה', emoji: '🍦' },
+  { template: 'הָ___ מְצַיֵּץ', answer: 'אֶפְרוֹחַ', emoji: '🐥' },
+  { template: 'הַ___ זוֹחֵל', answer: 'נָחָשׁ', emoji: '🐍' },
+  { template: 'הַ___ מְזַמְזֶמֶת', answer: 'דְּבוֹרָה', emoji: '🐝' },
+  { template: 'הַ___ מְטַפֵּס', answer: 'קוֹף', emoji: '🐵' },
+  { template: 'הַ___ מָתוֹק', answer: 'דְּבַשׁ', emoji: '🍯' },
+  { template: 'הַ___ צָהֹב', answer: 'לִימוֹן', emoji: '🍋' },
+  { template: 'הַ___ אָדֹם', answer: 'תּוּת', emoji: '🍓' },
+  { template: 'הַ___ מְצַלְצֵל', answer: 'טֵלֵפוֹן', emoji: '📱' },
+  { template: 'הָ___ פָּתוּחַ', answer: 'חַלּוֹן', emoji: '🪟' },
+  { template: 'הַ___ דּוֹלֵק', answer: 'נֵר', emoji: '🕯️' },
+  { template: 'הַ___ מְעוֹפֵף', answer: 'בָּלוֹן', emoji: '🎈' },
+  { template: 'הַ___ נוֹסַעַת עַל פַּסִּים', answer: 'רַכֶּבֶת', emoji: '🚂' },
+  { template: 'הַ___ חַם', answer: 'לֶחֶם', emoji: '🍞' },
+  { template: 'הַ___ נוֹשֵׁב', answer: 'רוּחַ', emoji: '💨' },
 ]
 
 /** קבוצות חרוזים — כל קבוצה היא מילים שמתחרזות (סיומת זהה). אומת ידנית. */
@@ -43,6 +57,14 @@ export const RHYME_GROUPS: RhymeWord[][] = [
   [{ word: 'פָּרָה', emoji: '🐄' }, { word: 'עוּגָה', emoji: '🍰' }, { word: 'בָּנָנָה', emoji: '🍌' }, { word: 'יַלְדָּה', emoji: '👧' }],
   // סיומת "יִם" (זוגי)
   [{ word: 'מַיִם', emoji: '💧' }, { word: 'אוֹפַנַּיִם', emoji: '🚲' }, { word: 'מִכְנָסַיִם', emoji: '👖' }, { word: 'מִשְׁקָפַיִם', emoji: '👓' }],
+  // סיומת "יר"
+  [{ word: 'שִׁיר', emoji: '🎵' }, { word: 'סִיר', emoji: '🍲' }, { word: 'עִיר', emoji: '🏙️' }, { word: 'קִיר', emoji: '🧱' }],
+  // סיומת "ָן"
+  [{ word: 'עָנָן', emoji: '☁️' }, { word: 'לָבָן', emoji: '⚪' }, { word: 'קָטָן' }, { word: 'גַּן' }],
+  // סיומת "וֹב"
+  [{ word: 'דֹּב', emoji: '🐻' }, { word: 'צָהֹב', emoji: '🟡' }, { word: 'טוֹב' }, { word: 'רָחוֹב' }],
+  // סיומת "וֹל"
+  [{ word: 'כָּחֹל', emoji: '🔵' }, { word: 'עָגֹל' }, { word: 'גָּדוֹל' }],
 ]
 
 /** מילים עם מספר הברות ודאי (לפי מחיאות כפיים — אומת ידנית). */
@@ -68,6 +90,22 @@ export const SYLLABLE_WORDS: SyllableWord[] = [
   { word: 'אוֹטוֹבּוּס', emoji: '🚌', count: 3 },
   { word: 'אֲבַטִּיחַ', emoji: '🍉', count: 4 },
   { word: 'אוֹפַנַּיִם', emoji: '🚲', count: 4 },
+  { word: 'יָד', emoji: '✋', count: 1 },
+  { word: 'אַף', emoji: '👃', count: 1 },
+  { word: 'פֶּה', emoji: '👄', count: 1 },
+  { word: 'כַּף', emoji: '🥄', count: 1 },
+  { word: 'אַרְיֵה', emoji: '🦁', count: 2 },
+  { word: 'כּוֹבַע', emoji: '🧢', count: 2 },
+  { word: 'שָׁעוֹן', emoji: '⏰', count: 2 },
+  { word: 'נַעַל', emoji: '👟', count: 2 },
+  { word: 'לֶחֶם', emoji: '🍞', count: 2 },
+  { word: 'יֶלֶד', emoji: '👦', count: 2 },
+  { word: 'חַלּוֹן', emoji: '🪟', count: 2 },
+  { word: 'מְכוֹנִית', emoji: '🚗', count: 3 },
+  { word: 'טֵלֵפוֹן', emoji: '📱', count: 3 },
+  { word: 'פִּטְרִיָּה', emoji: '🍄', count: 3 },
+  { word: 'חֲצוֹצְרָה', emoji: '🎺', count: 3 },
+  { word: 'מִשְׁקָפַיִם', emoji: '👓', count: 4 },
 ]
 
 export const READING_CATEGORIES: ReadCategory[] = [
