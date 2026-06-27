@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import * as Icons from 'lucide-react'
-import { ArrowRight, ArrowLeft, Loader2, Gamepad2, FileQuestion, BookOpen, Sparkles, Trophy, Target, ClipboardCheck, Calculator } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Loader2, Gamepad2, FileQuestion, BookOpen, Sparkles, Trophy, Target, ClipboardCheck, Calculator, Star } from 'lucide-react'
 import { useLocale, pickLang } from '@/context/LocaleContext'
 import { LangToggle } from '@/components/LangToggle'
 import { UserMenu } from '@/components/UserMenu'
@@ -22,7 +22,7 @@ import { GUIDED_SOLUTIONS } from '@/lib/guidedSolutions'
 import { levelTheme } from '@/lib/levelTheme'
 import { getSubjectBySlug, getGames, getQuestions, getMaterials } from '@/lib/db'
 import { examScopeFor } from '@/lib/leaderboard'
-import { getSubjectProgress, addQuizResult, addExamResult, readinessPct, readinessFromExam, type SubjectProgress } from '@/lib/localProgress'
+import { getSubjectProgress, addQuizResult, addExamResult, readinessPct, readinessFromExam, getStars, type SubjectProgress } from '@/lib/localProgress'
 import { getSavedName } from '@/lib/device'
 import { APP_NAME, APP_LOGO, gradeLabel } from '@/lib/constants'
 import type { Subject, Game, Question, Material } from '@/types'
@@ -76,6 +76,11 @@ export default function SubjectHub() {
   const [lbRefresh, setLbRefresh] = useState(0)
   const [activeSol, setActiveSol] = useState<string | null>(null)
 
+  // מצב כיתות צעירות (א'–ב') — תצוגה ידידותית, משחקית, עם ארנק כוכבים
+  const [stars, setStars] = useState(0)
+  const [showTutor, setShowTutor] = useState(false)
+  useEffect(() => { setStars(getStars()) }, [activeGame, loading])
+
   useEffect(() => {
     let active = true
     setLoading(true)
@@ -100,6 +105,8 @@ export default function SubjectHub() {
 
   const subjName = subject ? pickLang(locale, subject.nameHe, subject.nameEn) : ''
   const SubjIcon = (subject && (Icons[subject.icon as keyof typeof Icons] as React.ElementType)) || BookOpen
+  // כיתות צעירות (א'–ב') מקבלות תצוגה ידידותית ומשחקית במקום הטאבים והמבחן
+  const isKid = !!subject && subject.level === 'elementary' && grade <= 2
 
   const generateQuestions = async () => {
     setGenLoading(true); setGenError('')
@@ -204,6 +211,7 @@ export default function SubjectHub() {
           <div className="py-20 text-center text-muted-foreground">{t('learn.noSubjects')}</div>
         ) : (
           <>
+            {!isKid && (
             <div className="flex items-center gap-4 mb-8">
               <div
                 className="w-16 h-16 rounded-3xl flex items-center justify-center"
@@ -220,7 +228,80 @@ export default function SubjectHub() {
                 </p>
               </div>
             </div>
+            )}
 
+            {isKid ? (
+              /* ===== תצוגת כיתות צעירות — ידידותית, משחקית, עם ארנק כוכבים ===== */
+              <div className="animate-slide-up">
+                <div className="rounded-[2rem] p-6 mb-8 border border-border bg-gradient-to-br from-primary/15 via-accent/10 to-fun/10">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div
+                      className="w-20 h-20 rounded-[1.4rem] flex items-center justify-center shadow-sm shrink-0"
+                      style={{ backgroundColor: `color-mix(in oklch, ${subject.color} 22%, white)`, color: subject.color }}
+                    >
+                      <SubjIcon className="w-11 h-11" />
+                    </div>
+                    <div className="min-w-0">
+                      <h1 className="text-3xl font-extrabold font-display leading-tight">{subjName}</h1>
+                      <p className="text-muted-foreground">היי! בואו נשחק ונלמד 🎈</p>
+                    </div>
+                    <div className="sm:mr-auto flex items-center gap-3 px-5 py-3 rounded-3xl bg-amber-400/20 text-amber-600 border border-amber-400/40">
+                      <Star className="w-8 h-8 fill-current" />
+                      <div className="leading-none">
+                        <div className="text-3xl font-extrabold tabular-nums">{stars}</div>
+                        <div className="text-xs mt-1">כוכבים שלי</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {activeGame ? (
+                  <div>
+                    <Button variant="ghost" size="sm" onClick={() => setActiveGame(null)} className="mb-4 gap-1">
+                      <Back className="w-4 h-4" />חזרה למשחקים
+                    </Button>
+                    <GamePlayer game={activeGame} questionBank={quizQuestions} />
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="text-xl font-extrabold font-display mb-4 flex items-center gap-2">
+                      <Gamepad2 className="w-6 h-6 text-primary" />בחרו משחק
+                    </h2>
+                    {games.length === 0 ? (
+                      <div className="py-12 text-center text-muted-foreground">{t('subject.noContent')}</div>
+                    ) : (
+                      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
+                        {games.map((g) => {
+                          const v = gameVisual(g)
+                          return (
+                            <button
+                              key={g.id}
+                              onClick={() => setActiveGame(g)}
+                              className={`relative overflow-hidden rounded-3xl p-5 border-2 border-border/70 hover-lift flex flex-col items-center gap-3 text-center bg-gradient-to-br ${v.bg}`}
+                            >
+                              <span className="w-20 h-20 rounded-[1.3rem] bg-card shadow-sm border border-border/50 flex items-center justify-center text-5xl">{v.emoji}</span>
+                              <span className="font-bold font-display leading-tight">{pickLang(locale, g.titleHe, g.titleEn)}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    <div className="mt-8 text-center">
+                      <button onClick={() => setShowTutor((s) => !s)} className="text-sm text-primary font-medium inline-flex items-center gap-1.5">
+                        <BookOpen className="w-4 h-4" />צריך עזרה? שאלו את המורה 🦉
+                      </button>
+                      {showTutor && (
+                        <div className="mt-4 text-right">
+                          <AiTutor subject={subject.slug} subjectName={subjName} grade={grade} level={subject.level} />
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+            <>
             {/* Readiness / progress */}
             <div className="gradient-card rounded-3xl border border-border p-5 mb-6">
               <div className="flex items-center justify-between mb-2">
@@ -391,6 +472,8 @@ export default function SubjectHub() {
                 <AiTutor subject={subject.slug} subjectName={subjName} grade={grade} level={subject.level} />
               </TabsContent>
             </Tabs>
+            </>
+            )}
           </>
         )}
       </main>
